@@ -1,0 +1,1548 @@
+/* ============================================================
+   parser.y - Analizador sintáctico del compilador (BYACC/J)
+   ============================================================ */
+
+%{
+package parser;
+
+import java.io.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Stack;
+import lexer.*;
+import codigointermedio.*; 
+
+    // --- Gestores Principales ---
+    private SymbolTable symbolTable;
+    private Map<String, PolacaInversa> polacaGenerada;
+    private Stack<PolacaInversa> pilaGestoresPolaca;
+    private Stack<List<Integer>> pilaSaltosBF = new Stack<>();
+    private Stack<List<Integer>> pilaSaltosElse = new Stack<>();
+
+    // --- Variables de control ---
+    private Scanner lexer;
+    private boolean errorEnProduccion = false;
+    private boolean listaVariablesError = false;
+    private boolean listaExpresionesError = false;
+    private boolean listaTiposError = false;
+    private SymbolEntry currentFunctionEntry = null;
+    private int lambdaCounter = 0;
+    private PolacaInversa lambdaBodyBuffer = null; 
+    private PolacaInversa lambdaAssignBuffer = null; 
+    private SymbolEntry currentLambdaFormal = null;
+    
+    // --- LISTA DONDE SE GUARDAN LOS MENSAJES ---
+    private List<String> listaErrores = new ArrayList<>();
+
+    public Parser() {
+        this.symbolTable = new SymbolTable();
+        this.polacaGenerada = new HashMap<>();
+        this.pilaGestoresPolaca = new Stack<>();
+    }
+
+    private PolacaInversa PI() {
+        if (pilaGestoresPolaca.isEmpty()) return new PolacaInversa(symbolTable); 
+        return pilaGestoresPolaca.peek();
+    }
+
+    public SymbolTable getSymbolTable() { return this.symbolTable; }
+    public Map<String, PolacaInversa> getPolacaGenerada() { return this.polacaGenerada; }
+    public List<String> getListaErrores() { return this.listaErrores; }
+
+    // =========================================================================
+    //  MÉTODOS DE ERROR (Sustituyen a System.err.println)
+    // =========================================================================
+
+    // 1. Método para tus errores manuales en la gramática (Sintácticos)
+    private void addError(String mensaje) {
+        String error = "Línea " + lexer.getContext().getLine() + ": " + mensaje;
+        listaErrores.add(error);
+        errorEnProduccion = true;
+    }
+
+    // 2. Método para errores SEMÁNTICOS (Tipos, declaraciones)
+    // Se usa: yyerror("Mensaje", true);
+    public void yyerror(String s, boolean semantico) {
+        String error = "Error Semántico - Línea " + lexer.getContext().getLine() + ": " + s;
+        listaErrores.add(error);
+        errorEnProduccion = true;
+    }
+
+    // 3. Método automático de BYACC (Sintácticos por defecto)
+    public void yyerror(String s) {
+        String error = "Error Sintáctico - Línea " + lexer.getContext().getLine() + ": " + s;
+        listaErrores.add(error);
+        errorEnProduccion = true;
+    }
+
+    public void setScanner(Scanner lexer) { this.lexer = lexer; }
+
+    private int yylex() {
+        Token tok = null;
+        try {
+            tok = lexer.nextToken();
+        } catch (IOException e) {
+            addError("Error Fatal de IO: " + e.getMessage());
+            return 0;
+        }
+        if (tok == null) return 0;
+        if (tok.getEntry() != null) {
+            SymbolEntry entryDelScanner = tok.getEntry();
+            
+            // Buscamos si ya existe (para recuperar el objeto FUNCION original)
+            SymbolEntry entryExistente = symbolTable.lookup(entryDelScanner.getLexeme());
+            
+            if (entryExistente != null) {
+                yylval = new ParserVal(entryExistente); // <--- IMPORTANTE: new
+            } else {
+                yylval = new ParserVal(entryDelScanner); // <--- IMPORTANTE: new
+            }
+        }
+        switch (tok.getType()) {
+            case ID: return ID;
+            case STRING: return STRING;
+            case INT16: return INT16;
+            case FLOAT32: return FLOAT32;
+            case VAR: return VAR;
+            case PRINT: return PRINT;
+            case IF: return IF;
+            case ELSE: return ELSE;
+            case ENDIF: return ENDIF;
+            case RETURN: return RETURN;
+            case FOR: return FOR;
+            case FROM: return FROM;
+            case TO: return TO;
+            case PLUS: return PLUS;
+            case MINUS: return MINUS;
+            case STAR: return STAR;
+            case SLASH: return SLASH;
+            case ASSIGN: return ASSIGN;
+            case ASSIGN_COLON: return ASSIGN_COLON;
+            case EQ: return EQ;
+            case NEQ: return NEQ;
+            case LT: return LT;
+            case LE_OP: return LE_OP;
+            case GT: return GT;
+            case GE: return GE;
+            case LPAREN: return LPAREN;
+            case RPAREN: return RPAREN;
+            case LBRACE: return LBRACE;
+            case RBRACE: return RBRACE;
+            case UNDERSCORE: return UNDERSCORE;
+            case SEMICOLON: return SEMICOLON;
+            case ARROW: return ARROW;
+            case COMMA: return COMMA;
+            case CV: return CV;
+            case CR: return CR;
+            case LE_KW: return LE_KW;
+            case TOF: return TOF;
+            case INT_KW: return INT_KW;
+            case FLOAT_KW: return FLOAT_KW;
+            case ERROR:
+                addError(tok.getLexeme()); 
+                SymbolEntry fakeEntry = new SymbolEntry("ERROR_IGNORE");
+                fakeEntry.setTipo("error"); 
+                yylval.entry = fakeEntry;
+                return ID;
+            case EOF: return 0;
+            case POINT: return POINT;
+            default: return ERROR;
+        }
+    }
+%}
+
+/* ======= Unión de valores semánticos ======= */
+%union {
+    String sval;
+    Integer ival;
+    Double dval;
+    Object obj;
+    SymbolEntry entry;
+    PolacaElement Polacaelement;
+    ForContext contextfor;
+    ArrayList<String> listStr;
+    String[] semantica;
+    ParametroInvocacion paramInv;
+    ArrayList<ParametroInvocacion> listParamInv;
+}
+
+/* ======= Tokens ======= */
+%token <entry> ID STRING INT16 FLOAT32
+%token IF ELSE ENDIF PRINT RETURN VAR FOR FROM TO
+%token PLUS MINUS STAR SLASH
+%token ASSIGN ASSIGN_COLON
+%token <sval> EQ NEQ LT LE_OP GT GE
+%token LPAREN RPAREN LBRACE RBRACE UNDERSCORE SEMICOLON ARROW COMMA POINT
+%token CV CR LE_KW TOF
+%token ERROR EOF
+%token INT_KW FLOAT_KW STRING_KW
+
+%type <contextfor> encabezado_for
+%type <Polacaelement> expresion termino factor conversion_tof invocacion_funcion condicion lambda_argumento lambda_expresion
+%type <entry> identificador_completo inicio_programa identificador_destino inicio_funcion  INT_KW FLOAT_KW parametro_formal 
+%type <obj> lista_variables tipo parametros_formales lista_expresiones lista_variables_destino lista_tipos if_simple lambda_prefix
+%type <sval> operador_comparacion
+%type <semantica> sem_pasaje
+%type <listParamInv> parametros_reales
+%type <paramInv> parametro_real
+
+%left PLUS MINUS
+%left STAR SLASH
+%start input
+
+%%
+
+/* ======= Reglas de gramática ======= */
+
+input
+    : /* vacío */
+    | programa
+    | programa error  
+        { 
+            addError("Contenido inesperado después del final del programa. ¿Una '}' extra?");
+        }
+    ;
+
+// programa
+inicio_programa
+    : ID 
+      { 
+          SymbolEntry se_prog = (SymbolEntry)$1;
+          SymbolTable symTab = symbolTable;
+          se_prog.setUso("programa"); 
+          symTab.pushScope(se_prog.getLexeme()); 
+          symTab.add(se_prog);
+
+          PolacaInversa mainPI = new PolacaInversa(symbolTable);
+          polacaGenerada.put(se_prog.getMangledName(), mainPI);
+          pilaGestoresPolaca.push(mainPI);
+
+          $$ = $1; 
+      }
+    ;
+programa
+    : inicio_programa LBRACE lista_sentencias RBRACE
+    {
+        SymbolEntry se_prog = (SymbolEntry)$1;
+        PolacaInversa polaca = new PolacaInversa(symbolTable);
+        polaca.generateFunctionEnd(se_prog);
+
+        SymbolTable symTab = symbolTable;
+        symTab.popScope(); 
+        pilaGestoresPolaca.pop();
+
+        if (!errorEnProduccion) {
+            System.out.println("Línea " + lexer.getContext().getLine() + ": Estructura detectada correctamente: PROGRAMA. Ámbito cerrado.");
+        }
+    }
+    | error LBRACE lista_sentencias RBRACE
+        {
+            addError("Falta nombre de programa.");
+        }
+    | inicio_programa LBRACE lista_sentencias error
+        {
+            addError("Falta delimitador '}' de cierre del programa.");
+        }
+    | inicio_programa lista_sentencias error 
+        {
+            addError("Falta delimitador '{' de apertura del programa.");
+        }
+    ;
+    
+
+// Lista de sentencias
+lista_sentencias
+    : /* vacio */
+    | lista_sentencias sentencia_declarativa
+        { errorEnProduccion = false; } // REINICIAR
+    | lista_sentencias sentencia_ejecutable
+        { errorEnProduccion = false; } // REINICIAR
+    | lista_sentencias error SEMICOLON 
+        { 
+            yyerror("Error sintáctico en sentencia. Recuperando en ';'."); 
+            errorEnProduccion = false; // REINICIAR
+        }
+    ;
+
+lista_sentencias_sin_return
+    : /* vacio */
+    | lista_sentencias_sin_return sentencia_declarativa 
+    | lista_sentencias_sin_return sentencia_ejecutable_sin_return 
+    | lista_sentencias_sin_return error SEMICOLON 
+        { 
+            addError("Error en cuerpo de función. Recuperando en ';'."); 
+        }
+    ;
+
+sentencia_declarativa
+    : declaracion_funcion
+    | declaracion_variable
+    ;
+
+declaracion_variable
+    : VAR lista_variables SEMICOLON
+        {   ArrayList<SymbolEntry> entries = (ArrayList<SymbolEntry>)$2;
+            boolean redeclared = false;
+
+            for (SymbolEntry entry : entries) {
+                entry.setUso("variable");
+                entry.setTipo("untype"); 
+                
+                if (symbolTable.add(entry) ) { 
+                    
+                }else{
+                    yyerror("Variable '" + entry.getLexeme() + "' redeclarada en el ámbito actual.", true);
+                    redeclared = true;
+                }
+            }
+            if(listaVariablesError || redeclared) {
+                errorEnProduccion = true;
+            } else {
+                System.out.println("Línea " + lexer.getContext().getLine() + ": Declaración de variables registrada en TS.");
+            }
+            listaVariablesError = false; 
+        }
+    | VAR SEMICOLON
+        { 
+            addError("Falta lista de variables a continuación de var.");
+        } 
+    | VAR error SEMICOLON 
+        { 
+            addError("Error grave en la 'lista_variables'. Recuperando en ';'."); 
+            listaVariablesError = false; 
+        }
+    ;
+
+identificador_completo
+    : ID
+    {    
+        $$ = $1;
+    }
+    | identificador_completo POINT ID {
+        // Caso prefijado: MAIN.A
+        SymbolEntry scopeID = (SymbolEntry)$1;
+        SymbolEntry varID = (SymbolEntry)$3;
+        
+        // Guardamos "MAIN" dentro de "A" para usarlo después en el lookup
+        varID.setScopePrefix(scopeID.getLexeme());
+        
+        $$ = varID;
+    };
+
+lista_variables
+    : identificador_completo
+        {
+            ArrayList<SymbolEntry> list = new ArrayList<>();
+            SymbolEntry se = (SymbolEntry)$1;
+            
+            // VALIDACIÓN: No se puede declarar con prefijo
+            if (se.getScopePrefix() != null) {
+                yyerror("Error sintáctico: No se puede utilizar prefijos ('" + se.getScopePrefix() + "') en la declaración de variables.", true);
+            }
+            
+            list.add(se);
+            $$ = list;
+        }
+    | lista_variables COMMA identificador_completo
+        {
+            ArrayList<SymbolEntry> lista = (ArrayList<SymbolEntry>)$1;
+            SymbolEntry se = (SymbolEntry)$3;
+
+            // VALIDACIÓN
+            if (se.getScopePrefix() != null) {
+                yyerror("Error sintáctico: No se puede utilizar prefijos en la declaración.", true);
+            }
+            
+            if (lista == null) lista = new ArrayList<>();
+            lista.add(se);
+            $$ = lista; 
+        }
+    | lista_variables error identificador_completo
+        { 
+            listaVariablesError = true; 
+            errorEnProduccion = true; // Activar
+        }
+    ;
+identificador_destino:
+    identificador_completo {
+        SymbolEntry entradaParser = (SymbolEntry)$1;
+        String lexema = entradaParser.getLexeme();
+        if(lexema.equals("ERROR_IGNORE")){
+            $$=entradaParser;
+        }
+        else{
+            String prefijo = entradaParser.getScopePrefix();
+        
+        SymbolEntry encontrado = null;
+
+        // --- LÓGICA TEMA 23 ---
+        if (prefijo != null) {
+            // Caso 2: Tiene prefijo (ej: MAIN.A) -> Buscar en ámbito específico
+            // Usamos el método lookup(lexema, scope) que tenías en SymbolTable
+            encontrado = symbolTable.lookup(lexema, prefijo);
+            
+            if (encontrado == null) {
+                yyerror("Error: La variable '" + lexema + "' no existe en el ámbito '" + prefijo + "' o no es visible.", true);
+            }
+        } else {
+            // Caso 1: No tiene prefijo (ej: A) -> Buscar en actual y hacia arriba
+            encontrado = symbolTable.lookup(lexema);
+            
+            if (encontrado == null) {
+                yyerror("Variable no declarada: '" + lexema + "'", true);
+            }
+        }
+        // ----------------------
+
+        if (encontrado == null) {
+             listaVariablesError = true; 
+             errorEnProduccion = true; 
+             $$ = entradaParser; // Retornamos el dummy para evitar null pointers
+        } else {
+             $$ = encontrado; // Retornamos la entrada REAL de la tabla
+        }
+    }
+};
+        
+
+    lista_variables_destino
+    : identificador_destino {
+            ArrayList<SymbolEntry> list = new ArrayList<>();
+            list.add((SymbolEntry)$1);
+            $$ = list;
+        }
+    | lista_variables_destino COMMA identificador_destino{            
+            @SuppressWarnings("unchecked")
+            ArrayList<SymbolEntry> lista = (ArrayList<SymbolEntry>)$1;
+            if (lista == null) {
+                lista = new ArrayList<>();
+            }
+            lista.add($3);
+            $$ = lista; };
+
+
+inicio_funcion
+    : lista_tipos ID
+      { 
+          @SuppressWarnings("unchecked")
+          ArrayList<SymbolEntry> tiposRetorno = (ArrayList<SymbolEntry>)$1;
+          SymbolEntry se_func = (SymbolEntry)$2;
+          SymbolTable symTab = symbolTable;
+           
+          se_func.setUso("funcion");
+
+          if (tiposRetorno != null) {
+              for (SymbolEntry tipo : tiposRetorno) {
+                  // Guardamos el lexema ("int", "float") en la definición de la función
+                  se_func.addTipoRetorno(tipo.getLexeme()); 
+              }
+          }
+           
+          if (!symbolTable.add(se_func)) {
+                yyerror("Función redeclarada '" + se_func.getLexeme() + "'", true);
+            }  
+
+          currentFunctionEntry = se_func;
+
+          symTab.pushScope(se_func.getLexeme()); 
+          PolacaInversa funcPI = new PolacaInversa(symbolTable);
+          polacaGenerada.put(se_func.getMangledName(), funcPI);
+          pilaGestoresPolaca.push(funcPI); 
+            
+          PI().generateFunctionStart(se_func);
+
+          $$ = $2; 
+      }
+    ;
+declaracion_funcion
+    :inicio_funcion LPAREN parametros_formales RPAREN LBRACE lista_sentencias_sin_return sentencia_return lista_sentencias RBRACE
+        {
+            SymbolEntry se = (SymbolEntry)$1;
+            PI().generateFunctionEnd(se);
+
+            if (listaTiposError) {
+                addError("Falta ',' en lista de tipos de retorno.");
+            }
+            
+            if (!errorEnProduccion) { 
+                System.out.println("Línea " + lexer.getContext().getLine() + ": Declaracion de funcion detectada " + se.getLexeme());
+            }
+            symbolTable.popScope();
+            pilaGestoresPolaca.pop();
+
+            listaTiposError = false; 
+            currentFunctionEntry = null;
+        }
+    | inicio_funcion error LPAREN parametros_formales RPAREN LBRACE lista_sentencias_sin_return sentencia_return lista_sentencias RBRACE
+        { 
+            addError("Falta nombre de función.");
+        }
+    | inicio_funcion  LPAREN error RPAREN LBRACE lista_sentencias_sin_return sentencia_return lista_sentencias RBRACE
+        { 
+            addError("Se tiene que tener mínimo un parámetro formal.");
+        }
+    | inicio_funcion  LPAREN parametros_formales RPAREN error lista_sentencias_sin_return sentencia_return lista_sentencias RBRACE
+        { 
+            addError("Falta '{' de apertura de función.");
+        }
+    | lista_tipos  LPAREN parametros_formales RPAREN LBRACE lista_sentencias_sin_return sentencia_return lista_sentencias error
+        { 
+            addError("Falta '}' de cierre de función.");
+        }
+    | inicio_funcion LPAREN parametros_formales error LBRACE lista_sentencias_sin_return sentencia_return lista_sentencias RBRACE
+        { 
+            SymbolEntry se = (SymbolEntry)$1;
+            listaTiposError = false; 
+            addError("Falta ')' después de los parámetros de la función " + se.getLexeme() + ". Asumiendo inicio de bloque '{'."); 
+        }
+    ;
+
+lista_tipos
+    : tipo
+        {
+            ArrayList<SymbolEntry> lista = new ArrayList<>();
+            lista.add($1);
+            $$ = lista;
+        }
+    | lista_tipos COMMA tipo
+        {
+            @SuppressWarnings("unchecked")
+            ArrayList<SymbolEntry> lista = (ArrayList<SymbolEntry>)$1;
+            lista.add($3);
+            $$ = lista;
+        }
+    | lista_tipos tipo
+        {
+           listaTiposError = true;
+           errorEnProduccion = true; 
+        }
+    ;
+
+tipo
+    : INT_KW {$$ = new SymbolEntry("int");}
+    | FLOAT_KW {$$ = new SymbolEntry("float");}
+    ;
+
+parametros_formales
+    : parametro_formal
+    {$$=$1;}
+    | parametros_formales error parametro_formal
+        {
+            addError("Falta ',' entre parametros.");
+        }
+    | parametros_formales COMMA parametro_formal
+    ;
+
+parametro_formal
+    : tipo ID
+    { 
+        if (!errorEnProduccion) { 
+            SymbolEntry tipo = (SymbolEntry)$1;
+            SymbolEntry se = (SymbolEntry)$2;
+
+            se.setTipo(tipo.getLexeme());
+
+            se.setUso("parametro");
+            
+            se.setMecanismoPasaje("cvr"); 
+            se.setModoParametro("le");    
+            
+            /* 1. VINCULAR CON LA FUNCIÓN PADRE (Ya lo tenías) */
+            if (currentFunctionEntry != null) {
+                currentFunctionEntry.addParametro(se);
+            }
+
+            if (!symbolTable.add(se)) {
+                yyerror("Error: El parámetro '" + se.getLexeme() + "' ya fue declarado en este ámbito.", true);
+            }
+            
+            System.out.println("Parametro (Defecto CVR): " + se.getLexeme());
+        }
+    }
+    | sem_pasaje tipo ID
+    { 
+        if (!errorEnProduccion) { 
+            SymbolEntry tipo = (SymbolEntry)$2;
+            SymbolEntry se = (SymbolEntry)$3;
+            se.setTipo(tipo.getLexeme());
+            se.setUso("parametro");
+            
+            String[] config = (String[])$1;
+            se.setMecanismoPasaje(config[0]); 
+            se.setModoParametro(config[1]);   
+            
+            if (currentFunctionEntry != null) {
+                currentFunctionEntry.addParametro(se);
+            }
+
+            if (!symbolTable.add(se)) {
+                yyerror("Error: El parámetro '" + se.getLexeme() + "' ya fue declarado en este ámbito.", true);
+            }
+
+            System.out.println("Parametro (" + config[0] + " " + config[1] + "): " + se.getLexeme());
+        }
+    }
+    | sem_pasaje ID
+    {
+        SymbolEntry se = (SymbolEntry)$2;
+        
+        addError("Error Sintáctico: Falta el tipo de dato  para el parámetro '" + se.getLexeme() + "'.");
+        
+        se.setTipo("error"); 
+        se.setUso("parametro");
+        
+        String[] config = (String[])$1;
+        se.setMecanismoPasaje(config[0]);
+        se.setModoParametro(config[1]);
+
+        if (currentFunctionEntry != null) currentFunctionEntry.addParametro(se);
+        symbolTable.add(se); 
+    }
+    | ID
+    {
+        SymbolEntry se = (SymbolEntry)$1;
+        
+        addError("Error Sintáctico: Falta el tipo de dato para el parámetro '" + se.getLexeme() + "'.");
+        
+        se.setTipo("error");
+        se.setUso("parametro");
+        se.setMecanismoPasaje("cvr");
+        se.setModoParametro("le");
+
+        if (currentFunctionEntry != null) currentFunctionEntry.addParametro(se);
+        symbolTable.add(se);
+    }
+    ;
+
+sem_pasaje
+    : CV LE_KW 
+    { 
+        $$ = new String[]{"cv", "le"}; 
+    }
+    | CR LE_KW 
+    { 
+        $$ = new String[]{"cr", "le"}; 
+    }
+    /* Manejo de errores comunes */
+    | CV error
+    { 
+        addError("Falta la directiva 'le' después de 'cv'.");
+        $$ = new String[]{"cv", "le"}; 
+    }
+    | CR error
+    { 
+        addError("Falta la directiva 'le' después de 'cr'.");
+        $$ = new String[]{"cr", "le"}; 
+    }
+    ;
+sentencia_return
+    : RETURN LPAREN lista_expresiones RPAREN SEMICOLON
+        {
+            ArrayList<PolacaElement> retornosReales = (ArrayList<PolacaElement>)$3;
+            
+            // Validar si hay errores previos de sintaxis
+            if (listaExpresionesError) { 
+                addError("Falta de ',' en argumentos de return.");
+            }
+
+            // Validar contra la firma de la función actual
+            if (currentFunctionEntry == null) {
+                yyerror("Return fuera de contexto de función.");
+            } else {
+                List<String> tiposEsperados = currentFunctionEntry.getTiposRetorno();
+                
+                // 1. VALIDAR CANTIDAD EXACTA (La función debe cumplir su promesa)
+                // Nota: El Tema 20 habla de flexibilidad en la ASIGNACIÓN, no en la DEFINICIÓN.
+                // Por ende, un return debe coincidir con la firma.
+                if (retornosReales.size() != tiposEsperados.size()) {
+                    yyerror("Error: La función '" + currentFunctionEntry.getLexeme() + 
+                            "' debe retornar exactamente " + tiposEsperados.size() + 
+                            " valores (firma declarada), pero retorna " + retornosReales.size() + ".", true);
+                } else {
+                    // 2. CHEQUEO DE TIPOS INDIVIDUAL
+                    for (int i = 0; i < retornosReales.size(); i++) {
+                        String tipoReal = retornosReales.get(i).getResultType();
+                        String tipoEsperado = tiposEsperados.get(i);
+                        
+                        if (!codigointermedio.TypeChecker.checkAssignment(tipoEsperado, tipoReal)) {
+                            yyerror("Error de Tipo en retorno #" + (i+1) + 
+                                    ": Se esperaba '" + tipoEsperado + 
+                                    "' pero se encontró '" + tipoReal + "'.", true);
+                        }
+                    }
+                }
+            }
+
+            // Generar instrucción RETURN
+            PI().generateOperation("RETURN", false);
+
+            if (!errorEnProduccion) { 
+                System.out.println("Línea " + lexer.getContext().getLine() + ": Return validado correctamente.");
+            }
+            listaExpresionesError = false;
+        }
+    ;
+
+sentencia_ejecutable
+    : asignacion SEMICOLON
+    | sentencia_return 
+    | sentencia_print SEMICOLON
+    | sentencia_if
+    | sentencia_for
+    | lambda_expresion
+    ;
+
+sentencia_ejecutable_sin_return
+    : asignacion SEMICOLON
+    | sentencia_print SEMICOLON
+    | sentencia_if
+    | sentencia_for
+    | lambda_expresion
+    ;
+
+sentencia_print
+    : PRINT LPAREN expresion RPAREN 
+       { 
+            PolacaElement expr = (PolacaElement)$3;
+            PI().generatePrint(expr);
+            
+            if (!errorEnProduccion) {
+                System.out.println("Línea " + lexer.getContext().getLine() + ": Print detectado");
+            }
+       }
+     | PRINT LPAREN error RPAREN 
+       {
+            addError("Falta argumento en print.");
+       };
+
+
+lista_sentencias_ejecutables
+    : 
+    | lista_sentencias_ejecutables sentencia_ejecutable 
+    | lista_sentencias_ejecutables error SEMICOLON 
+        { 
+            yyerror("Error en bloque. Recuperando en ';'."); 
+        }
+    ;
+
+bloque_sentencias_ejecutables
+    : LBRACE lista_sentencias_ejecutables RBRACE
+    ;
+
+
+resto_if
+    /* OPCIÓN A: IF SIMPLE (Termina con ENDIF) */
+    : ENDIF SEMICOLON
+      {
+          /* Recuperamos el salto BF de la pila (guardado en sentencia_if) */
+          if (!pilaSaltosBF.isEmpty()) {
+              List<Integer> listaBF = pilaSaltosBF.pop();
+              int target_endif = PI().getCurrentAddress();
+              PI().backpatch(listaBF, target_endif);
+          }
+          if (!errorEnProduccion) System.out.println("IF Simple detectado.");
+      }
+
+    /* OPCIÓN B: IF-ELSE (Sigue con ELSE) */
+    | ELSE 
+      {
+          /* 1. Generar BI del THEN (Saltar el Else) */
+          List<Integer> listaBI = PI().generateUnconditionalJump();
+          pilaSaltosElse.push(listaBI);
+
+          /* 2. Parchear el BF de la condición (Entrar al Else) */
+          if (!pilaSaltosBF.isEmpty()) {
+              List<Integer> listaBF = pilaSaltosBF.pop();
+              int target_else = PI().getCurrentAddress();
+              PI().backpatch(listaBF, target_else);
+          }
+      }
+      bloque_sentencias_ejecutables ENDIF SEMICOLON
+      {
+
+          if (!pilaSaltosElse.isEmpty()) {
+              List<Integer> listaBI = pilaSaltosElse.pop();
+              int target_endif = PI().getCurrentAddress();
+              PI().backpatch(listaBI, target_endif);
+          }
+          if (!errorEnProduccion) System.out.println("IF-ELSE detectado.");
+      }
+
+    | error 
+      { 
+          addError("Falta palabra clave 'endif' o 'else' al finalizar la selección."); 
+      }
+    ;
+
+sentencia_if
+    : IF LPAREN condicion RPAREN 
+      {
+          
+          PolacaElement cond = (PolacaElement)$3;
+          pilaSaltosBF.push(cond.getFalseList());
+      }
+      bloque_sentencias_ejecutables 
+      resto_if 
+    
+    /* --- ERRORES DEL ENCABEZADO (Estos se quedan aquí) --- */
+    | IF error condicion RPAREN bloque_sentencias_ejecutables resto_if 
+        { addError("Falta paréntesis de apertura '(' en IF."); }
+    | IF LPAREN condicion error bloque_sentencias_ejecutables resto_if 
+        { addError("Falta paréntesis de cierre ')' en condición."); }
+    | IF LPAREN condicion RPAREN error resto_if 
+        { addError("Error en el cuerpo de la cláusula then."); }
+    ;
+
+if_simple
+    : IF LPAREN condicion RPAREN sentencia_ejecutable 
+    { 
+        PolacaElement cond = (PolacaElement)$3;
+        List<Integer> listaBF = cond.getFalseList();
+
+        
+        if (!errorEnProduccion) { 
+            System.out.println("Línea " + lexer.getContext().getLine() + 
+                ": If simple detectado (sin backpatch aún)");
+        }
+        
+        $$ = listaBF;
+    }
+
+encabezado_for
+    : FOR LPAREN identificador_destino FROM factor TO factor RPAREN
+    {
+        SymbolEntry id = (SymbolEntry)$3;
+        PolacaElement cte1 = $5; 
+        PolacaElement cte2 = $7;
+        
+         if (!id.getTipo().equals("int") && !id.getTipo().equals("untype")) {
+             yyerror("La variable del for '" + id.getLexeme() + "' debe ser de tipo 'int'.", true);
+             errorEnProduccion = true;
+        } else if (id.getTipo().equals("untype")) {
+             id.setTipo("int"); 
+        }
+            
+        if (!errorEnProduccion) {
+        
+        int val1 = 0;
+        int val2 = 0;
+        try {
+             val1 = Integer.parseInt(cte1.getResultEntry().getLexeme());
+             val2 = Integer.parseInt(cte2.getResultEntry().getLexeme());
+        } catch(Exception e) {
+        }
+        
+        PolacaElement opCte1 = PI().generateOperand(cte1.getResultEntry());
+        PI().generateAssignment(id, opCte1);
+        
+        int labelStart = PI().getCurrentAddress();
+        
+        String operador;
+        boolean esIncremento; 
+        
+        if (val1 <= val2) {
+            operador = "<="; 
+            esIncremento = true;
+        } else {
+            operador = ">="; 
+            esIncremento = false;
+        }
+        
+        PolacaElement exprId = PI().generateOperand(id);
+        PolacaElement exprCte2 = PI().generateOperand(cte2.getResultEntry());
+        
+        PolacaElement condicion = PI().generateCondition(exprId, exprCte2, operador, "boolean");
+        
+        ForContext nuevoContexto = new ForContext(
+            id,                     
+            labelStart,             
+            condicion.getFalseList(), 
+            esIncremento            
+        );
+        
+        yyval.contextfor = nuevoContexto;
+        }
+    }
+    ;
+
+sentencia_for
+    : encabezado_for LBRACE lista_sentencias_ejecutables RBRACE SEMICOLON
+    {
+        ForContext ctx = $1; 
+        if (ctx != null) {
+        PolacaElement opId = PI().generateOperand(ctx.variableControl);
+        
+        SymbolEntry unoConst = new SymbolEntry("1", "constante", "int");
+        PolacaElement opUno = PI().generateOperand(unoConst);
+        
+        String opAritmetico = ctx.esIncremento ? "+" : "-";
+        
+        PolacaElement resultado = PI().generateOperation(opId, opUno, opAritmetico, "int");
+        PI().generateAssignment(ctx.variableControl, resultado);
+        
+        List<Integer> biList = PI().generateUnconditionalJump();
+        PI().backpatch(biList, ctx.labelInicio);
+        
+        int finDelFor = PI().getCurrentAddress();
+        PI().backpatch(ctx.listaBF, finDelFor);
+        }
+        else {
+            addError("Error interno: Contexto del For no disponible en finalización.");
+        }    
+        if (!errorEnProduccion) {
+             System.out.println("Línea " + lexer.getContext().getLine() + ": Fin de sentencia FOR generado. Tipo: " + (ctx.esIncremento ? "Ascendente" : "Descendente"));
+        }
+    }
+    | FOR error identificador_destino FROM factor TO factor RPAREN bloque_sentencias_ejecutables SEMICOLON
+        { 
+            addError("Falta parentesis de apertura en encabezado del for.");
+        }
+    | FOR LPAREN error FROM factor TO factor RPAREN bloque_sentencias_ejecutables SEMICOLON
+        {
+            addError("Falta nombre de variable en for.");
+        }
+    | FOR LPAREN identificador_destino error factor TO factor RPAREN bloque_sentencias_ejecutables SEMICOLON
+        { 
+            addError("Falta palabra clave 'from' en encabezado del for.");
+        }
+    | FOR LPAREN identificador_destino FROM error TO factor RPAREN bloque_sentencias_ejecutables SEMICOLON
+        { 
+            addError("Falta constante inicial en encabezado del for.");
+        }
+    | FOR LPAREN identificador_destino FROM factor error factor RPAREN bloque_sentencias_ejecutables SEMICOLON
+        { 
+            addError("Falta palabra clave 'to' en encabezado del for.");
+        }
+    | FOR LPAREN identificador_destino FROM factor TO error RPAREN bloque_sentencias_ejecutables SEMICOLON
+        { 
+            addError("Falta constante final en encabezado del for.");
+        }
+    | FOR LPAREN identificador_destino FROM factor TO factor error bloque_sentencias_ejecutables SEMICOLON
+        { 
+            addError("Falta parentesis de cierre en encabezado for.");
+        }
+    | FOR error SEMICOLON 
+        { 
+            yyerror("Error sintáctico grave en 'for'. No se pudo analizar la estructura. Recuperando en ';'."); 
+        }
+    ;
+
+condicion
+    : expresion operador_comparacion expresion
+        {
+            PolacaElement op1 = (PolacaElement)$1;
+            String operator = (String)$2; 
+            PolacaElement op2 = (PolacaElement)$3;
+            
+            String resultType = codigointermedio.TypeChecker.checkArithmetic(op1.getResultType(), op2.getResultType());
+
+            if (resultType.equals("error")) {
+                yyerror("Tipos incompatibles: Comparación lógica inválida entre '" + op1.getResultType() + "' y '" + op2.getResultType() + "'.", true);
+                $$ = PI().generateErrorElement("boolean"); 
+            } else {
+                $$ = PI().generateCondition(op1, op2, operator, "boolean"); 
+            }
+        }
+    | expresion expresion
+        { 
+            addError("Falta de comparador en comparación.");
+        }
+    | error operador_comparacion expresion
+        { 
+            addError("Falta operando izquierdo en comparación.");
+        }
+    | expresion operador_comparacion error
+        { 
+            addError("Falta operando derecho en comparación.");
+        }
+    ;
+
+operador_comparacion
+    : EQ    { $$ = "=="; }
+    | NEQ   { $$ = "=!"; }  
+    | LT    { $$ = "<";  }
+    | LE_OP { $$ = "<="; }
+    | GT    { $$ = ">";  }
+    | GE    { $$ = ">="; }
+    ;
+
+
+asignacion
+    : identificador_destino ASSIGN_COLON expresion
+        { 
+            SymbolEntry destino = (SymbolEntry)$1;
+            PolacaElement fuente = (PolacaElement)$3;
+
+        if (errorEnProduccion) {
+                        errorEnProduccion = false; 
+                    } else {
+                    if (destino.getUso() == null && !destino.getUso().equals("variable")) {
+                        yyerror("El identificador '" + destino.getLexeme() + "' no es una variable.", true);
+                    } else if(destino.getUso().equals("variable")){
+                        if (destino.getTipo().equals("untype")){
+                            // Si era untype, tomamos el tipo de la fuente
+                            destino.setTipo(fuente.getResultType());
+                        }
+                    }
+
+                    if (!codigointermedio.TypeChecker.checkAssignment(destino.getTipo(), fuente.getResultType())) {
+                        yyerror("Tipos incompatibles: No se puede asignar '" + fuente.getResultType() + 
+                                "' a la variable '" + destino.getTipo() + "'.", true);
+                    }
+                    
+                    if (!errorEnProduccion) {
+                        destino.setValue(fuente.getResultEntry().getValue());
+                        symbolTable.updateValue(destino);
+                        System.out.println("Línea " + lexer.getContext().getLine() + ": Asignación simple detectada a " + destino.getLexeme());
+                        PI().generateAssignment(destino, fuente);
+                    }
+                }
+        }    
+| lista_variables_destino ASSIGN lista_expresiones
+    {    
+        ArrayList<PolacaElement> listaFuentes = (ArrayList<PolacaElement>)$3;
+        ArrayList<SymbolEntry> listaDestinos = (ArrayList<SymbolEntry>)$1;
+
+        if(listaVariablesError) {
+            addError("Falta ',' en la lista de variables de la asignación.");
+        } 
+        if(listaExpresionesError) {
+            addError("Falta ',' en la lista de expresiones de la asignación.");
+        } 
+
+        if (!errorEnProduccion) {    
+            boolean esInvocacionMultiple = false;
+
+            if (listaFuentes.size() == 1) {
+                PolacaElement fuente = listaFuentes.get(0);
+                SymbolEntry symFuente = fuente.getResultEntry(); 
+                
+                if (symFuente != null) {
+                    // Caso A: Es directamente una función
+                    if ("funcion".equals(symFuente.getUso()) 
+                        && symFuente.getTiposRetorno() != null 
+                        && !symFuente.getTiposRetorno().isEmpty()){
+                            esInvocacionMultiple = true;
+                    }
+                    // Caso B: Es un temporal que viene de una función (Corrección anterior)
+                    else if (symFuente.getFuncionOrigen() != null) {
+                        SymbolEntry funcionReal = symFuente.getFuncionOrigen();
+                        if (funcionReal.getTiposRetorno() != null && !funcionReal.getTiposRetorno().isEmpty()) {
+                            esInvocacionMultiple = true;
+                            symFuente = funcionReal; // Usamos la función real para los tipos
+                        }
+                    }
+                }
+                
+                // Lógica específica para Asignación Múltiple de Función
+                if (esInvocacionMultiple) {
+                    List<String> tiposRetorno = symFuente.getTiposRetorno();
+                    
+                    int numVars = listaDestinos.size();     
+                    int numRets = tiposRetorno.size();      
+
+                    if (numRets > numVars) {
+                        System.err.println("WARNING (Línea " + lexer.getContext().getLine() + 
+                             "): La función retorna " + numRets + " valores pero solo se asignan " + numVars + 
+                             ". Los valores sobrantes se descartarán.");
+                    } 
+                    else if (numRets < numVars) {
+                        yyerror("Error Semántico: La función retorna " + numRets + 
+                                " valores, insuficiente para cubrir las " + numVars + " variables de destino.", true);
+                    }
+
+                    if (numRets >= numVars) {
+                        for (int i = 0; i < numVars; i++) {
+                            SymbolEntry destino = listaDestinos.get(i);
+                            String tipoRetorno = tiposRetorno.get(i);
+
+                            if ("untype".equals(destino.getTipo())) {
+                                destino.setTipo(tipoRetorno);
+                                if (!errorEnProduccion) {
+                                    System.out.println(" Variable " + destino.getLexeme() + 
+                                                       "' inferida como '" + tipoRetorno + "'");
+                                }
+                            }
+                            if (!codigointermedio.TypeChecker.checkAssignment(destino.getTipo(), tipoRetorno)) {
+                                yyerror("Error de Tipos en variable " + (i+1) + " ('" + destino.getLexeme() + 
+                                        "'): Se esperaba compatible con '" + destino.getTipo() + 
+                                        "' pero la función retorna '" + tipoRetorno + "'.", true);
+                            }
+                            
+                            // Generamos la asignación (Destino = Resultado_Pila)
+                            PI().generateAssignment(destino, fuente);
+                            
+                            if (!errorEnProduccion) {
+                                System.out.println("    -> Asignación múltiple  " + destino.getLexeme() + " (Tipo: " + tipoRetorno + ")");
+                            }
+                        }
+                    }
+                }
+            } 
+
+            if (!esInvocacionMultiple) {
+                System.out.println("Línea " + lexer.getContext().getLine() + ": Asignación estándar detectada");
+                
+                if (listaDestinos.size() != listaFuentes.size()) {
+                    yyerror("Asignación múltiple: número de variables (" + listaDestinos.size() + 
+                            ") y expresiones (" + listaFuentes.size() + ") no coinciden.", true);
+                } else {
+                    for (int i = 0; i < listaDestinos.size(); i++) {
+                        SymbolEntry destino = listaDestinos.get(i);
+                        PolacaElement fuente = listaFuentes.get(i);
+                        
+                        if (destino.getUso() == null && !destino.getUso().equals("variable")) {
+                            yyerror("El identificador '" + destino.getLexeme() + "' no es una variable.", true);
+                        } else if(destino.getUso().equals("variable")){
+                            if (destino.getTipo().equals("untype")){
+                                destino.setTipo("int"); 
+                            }
+                        }
+                        if (!codigointermedio.TypeChecker.checkAssignment(destino.getTipo(), fuente.getResultType())) {
+                            yyerror("Tipos incompatibles: No se puede asignar '" + fuente.getResultType() 
+                                    + "' a la variable '" + destino.getTipo() + "'.", true);
+                        } else {
+                            destino.setValue(fuente.getResultEntry().getValue());
+                            symbolTable.updateValue(destino);
+                            System.out.println("    Asignado a " + destino.getLexeme()+ " valor: " + destino.getValue());
+                            PI().generateAssignment(destino, fuente);
+                        }
+                    }
+                }
+            }
+        }
+        
+        listaVariablesError = false;
+        listaExpresionesError = false;
+    };
+
+lista_expresiones
+    : expresion
+           {List<PolacaElement> list = new ArrayList<>();
+            list.add((PolacaElement)$1);
+            $$ = list;
+        }
+    | lista_expresiones COMMA expresion{
+            @SuppressWarnings("unchecked")
+            List<PolacaElement> lista = (List<PolacaElement>)$1;
+            if (lista == null) {
+                lista = new ArrayList<>();
+            }
+            lista.add($3);
+            $$ = lista; 
+    }
+    | lista_expresiones error expresion
+        { 
+            listaExpresionesError = true; 
+            errorEnProduccion = true; // Activar
+        }
+    ;
+
+expresion
+    : termino 
+        { $$ = $1; }
+    | expresion PLUS termino
+        {
+            PolacaElement elem1 = $1;
+            PolacaElement elem2 = $3;
+            
+            String tipoResultante = TypeChecker.checkArithmetic(elem1.getResultType(), elem2.getResultType());
+            if (tipoResultante.equals("error")) {
+                yyerror("Tipos incompatibles para la suma tipo 1: " + elem1.getResultType() + " tipo 2: " + elem2.getResultType(), true);
+                $$ = PI().generateErrorElement("error"); 
+            } else {
+                $$ = PI().generateOperation(elem1, elem2, "+", tipoResultante);
+            }
+        }
+    | expresion PLUS error
+        { 
+            addError("Falta de operando en expresión.");
+        }
+    | expresion MINUS termino
+            {
+            PolacaElement elem1 = $1;
+            PolacaElement elem2 = $3;
+            
+            String tipoResultante = TypeChecker.checkArithmetic(elem1.getResultType(), elem2.getResultType());
+            if (tipoResultante.equals("error")) {
+                yyerror("Tipos incompatibles para la resta tipo 1: " + elem1.getResultType() + " tipo 2: " + elem2.getResultType(), true);
+                $$ = PI().generateErrorElement("error"); 
+            } else {
+                $$ = PI().generateOperation(elem1, elem2, "-", tipoResultante);
+            }
+        }
+    | expresion MINUS error
+        { 
+            addError("Falta de operando en expresión.");
+        }
+    ;
+
+termino
+    : factor
+    {
+        $$ = $1;
+    }
+    | termino STAR factor{
+        PolacaElement term = $1;
+        PolacaElement fact = $3;
+        String tipoResultante = TypeChecker.checkArithmetic(term.getResultType(), fact.getResultType());
+        if (tipoResultante.equals("error")) {
+            yyerror("Tipos incompatibles para la multiplicación tipo 1: " + term.getResultType() + " tipo 2: " + fact.getResultType(), true);
+            $$ = PI().generateErrorElement("error"); 
+        } else {
+            $$ = PI().generateOperation(term, fact, "*", tipoResultante);
+        }
+    }
+    | termino STAR error
+        { 
+            addError("Falta de operando en término.");
+        }
+    | termino SLASH factor
+    {
+        PolacaElement term = $1;
+        PolacaElement fact = $3;
+        String tipoResultante = TypeChecker.checkArithmetic(term.getResultType(), fact.getResultType());
+        if (tipoResultante.equals("error")) {
+            yyerror("Tipos incompatibles para la división tipo 1: " + term.getResultType() + " tipo 2: " + fact.getResultType(), true);
+            $$ = PI().generateErrorElement("error"); 
+        } else {
+            $$ = PI().generateOperation(term, fact, "/", tipoResultante);
+        }
+    }
+    | termino SLASH error
+        { 
+            addError("Falta de operando en término.");
+        }
+    ;
+
+factor
+    : identificador_completo
+        { 
+            SymbolEntry entradaParser = (SymbolEntry)$1;
+            String lexema = entradaParser.getLexeme();
+            if(lexema.equals("ERROR_IGNORE")){
+                $$=PI().generateErrorElement("error");
+            }
+            else{
+                String prefijo = entradaParser.getScopePrefix();
+            SymbolEntry entry = null;
+
+            // --- LÓGICA DE BÚSQUEDA (Igual que en identificador_destino) ---
+            if (prefijo != null) {
+                entry = symbolTable.lookup(entradaParser.getLexeme(), prefijo);
+                if (entry == null) yyerror("Variable '" + entradaParser.getLexeme() + "' no encontrada en ámbito '" + prefijo + "'.", true);
+            } else {
+                entry = symbolTable.lookup(entradaParser.getLexeme());
+                if (entry == null) yyerror("Variable '" + entradaParser.getLexeme() + "' no declarada.", true);
+            }
+            
+            // Generación de error o código
+            if (entry == null) {
+                 $$ = PI().generateErrorElement("error");
+            } else if (entry.getUso().equals("funcion")) {
+                 yyerror("Uso incorrecto de función como variable.", true);
+                 $$ = PI().generateErrorElement("error");
+            } else {
+                 $$ = PI().generateOperand(entry);
+            }
+        }
+    }
+| INT16 
+        {
+            $$ = PI().generateOperand($1);
+        }
+| FLOAT32 
+        { 
+            $$ = PI().generateOperand($1);
+        }
+| STRING  
+      { 
+          $$ = PI().generateOperand($1); 
+      }
+| invocacion_funcion
+        { $$ = $1; } 
+| conversion_tof
+        { $$ = $1; } 
+    ;
+
+
+invocacion_funcion
+    : ID LPAREN parametros_reales RPAREN 
+    {   
+        SymbolEntry funcion = (SymbolEntry)$1;
+        
+        // 1. Validar que sea una función
+        if (!"funcion".equals(funcion.getUso())) {
+            yyerror("El identificador '" + funcion.getLexeme() + "' no es una función.", true);
+            $$ = PI().generateErrorElement("error");
+        } else {
+            @SuppressWarnings("unchecked")
+            ArrayList<ParametroInvocacion> reales = (ArrayList<ParametroInvocacion>)$3;
+            if (reales == null) reales = new ArrayList<>();
+
+            List<SymbolEntry> formales = funcion.getParametros(); // Lista ordenada de params formales
+            
+            // 2. Validar Cantidad
+            if (reales.size() != formales.size()) {
+                 yyerror("La función '" + funcion.getLexeme() + "' espera " + formales.size() + 
+                         " parámetros, pero se recibieron " + reales.size() + ".", true);
+            }
+            
+            for (SymbolEntry formal : formales) {
+                boolean encontrado = false;
+                ParametroInvocacion paramRealMatch = null;
+
+                // Buscamos en la lista desordenada de la invocación
+                for (ParametroInvocacion real : reales) {
+                    if (real.getNombreDestino().equals(formal.getLexeme())) {
+                        encontrado = true;
+                        paramRealMatch = real;
+                        break;
+                    }
+                }
+
+                if (!encontrado) {
+                    yyerror("Error: Falta el parámetro obligatorio '" + formal.getLexeme() + 
+                            "' en la invocación de '" + funcion.getLexeme() + "'.", true);
+                } else {
+
+                    if ("string".equals(paramRealMatch.getValor().getResultType())) {
+                    yyerror("Error Semántico: No se permite pasar cadenas de caracteres (STRING) como parámetros a funciones.", true);
+                    }
+                    
+                    if (!codigointermedio.TypeChecker.checkAssignment(formal.getTipo(), paramRealMatch.getValor().getResultType())) {
+                         yyerror("Error de Tipo en parámetro '" + formal.getLexeme() + 
+                                 "'. Se esperaba '" + formal.getTipo() + 
+                                 "' pero se recibió '" + paramRealMatch.getValor().getResultType() + "'.", true);
+                    }
+                    
+                   PI().generateAssignment(formal, paramRealMatch.getValor());
+                }
+            }
+
+            // 6. Generar la llamada a la función (CALL)
+            $$ = PI().generateCall(funcion); 
+
+            for (SymbolEntry formal : formales) {
+                ParametroInvocacion paramRealMatch = null;
+                for (ParametroInvocacion real : reales) {
+                    if (real.getNombreDestino().equals(formal.getLexeme())) {
+                        paramRealMatch = real;
+                        break;
+                    }
+                }
+
+                if (paramRealMatch != null) {
+                    String mecanismo = formal.getMecanismoPasaje(); 
+                    
+                    if ("cr".equals(mecanismo) || "cvr".equals(mecanismo)) {
+                        
+                        SymbolEntry realSym = paramRealMatch.getValor().getResultEntry();
+                        
+                        if (realSym != null && "variable".equals(realSym.getUso())) {
+                            
+                            PolacaElement valorFormal = new PolacaElement(formal.getTipo(), formal);
+                            PI().generateAssignment(realSym, valorFormal);
+                            
+                            if (!errorEnProduccion) {
+                                System.out.println("   -> Copia-Resultado (Tema 26): " + realSym.getLexeme() + " actualizado con " + formal.getLexeme());
+                            }
+                        } else {
+                             yyerror("Error Semántico: El parámetro '" + formal.getLexeme() + 
+                                     "' es de tipo Copia-Resultado, por lo que el parámetro real debe ser una variable, no una constante o expresión.", true);
+                        }
+                    }
+                }
+            }
+            
+            if (!errorEnProduccion) {
+                System.out.println("Línea " + lexer.getContext().getLine() + ": Invocación correcta a " + funcion.getLexeme());
+            }
+        }
+    }
+    ;
+
+conversion_tof
+    : TOF LPAREN expresion RPAREN
+        { 
+            PolacaElement expr = (PolacaElement)$3;
+            
+            if (!expr.getResultType().equals("int")) {
+                 yyerror("Se intentó convertir a float una expresión que es de tipo '" + expr.getResultType() + "'.", true);
+                 $$ = expr; 
+            } else {
+                $$ = PI().generateTOF(expr);
+                if (!errorEnProduccion) {
+                    System.out.println("Línea " + lexer.getContext().getLine() + ":  Conversión explícita TOF generada correctamente."); 
+                }
+            }
+        }
+    | TOF error expresion RPAREN 
+        { 
+            addError("Falta el '(' en la conversión explícita.");
+        }
+    | TOF LPAREN expresion error 
+        { 
+            addError("Falta el ')' en la conversión explícita.");
+        }
+    ;
+
+parametros_reales
+    : parametro_real
+    {
+        ArrayList<ParametroInvocacion> lista = new ArrayList<>();
+        lista.add($1);
+        yyval = new ParserVal();
+        yyval.listParamInv = lista;
+    }
+    | parametros_reales COMMA parametro_real
+    {
+        @SuppressWarnings("unchecked")
+        ArrayList<ParametroInvocacion> lista = (ArrayList<ParametroInvocacion>)$1;
+        lista.add($3);
+        yyval = new ParserVal();
+        yyval.listParamInv = lista;
+    }
+    ;
+
+parametro_real
+    : expresion ARROW ID
+    {
+        PolacaElement expr = (PolacaElement)$1;
+        SymbolEntry idParam = (SymbolEntry)$3;
+        
+        $$ = new ParametroInvocacion(idParam.getLexeme(), expr);
+        
+        if (!errorEnProduccion) { 
+            System.out.println("   -> Parametro nombrado detectado: " + idParam.getLexeme());
+        }
+    }
+    | expresion error
+    { 
+        addError("Sintaxis incorrecta en parámetro. Se espera 'valor -> nombre'.");
+        $$ = new ParametroInvocacion("error", (PolacaElement)$1); // Dummy para no romper todo
+    }
+    ;
+
+lambda_prefix
+    : LPAREN tipo ID RPAREN
+    { 
+        SymbolEntry tipoFormal = (SymbolEntry)$2;
+        SymbolEntry formal = (SymbolEntry)$3;
+        
+        formal.setTipo(tipoFormal.getLexeme());
+        formal.setUso("parametro_lambda");
+
+        String uniqueScopeName = "LAMBDA_ANON_" + (++lambdaCounter);
+        symbolTable.pushScope(uniqueScopeName);
+        symbolTable.add(formal);
+
+        currentLambdaFormal = formal;
+        
+        lambdaBodyBuffer = new PolacaInversa(symbolTable);
+        
+        /* Cambiar el gestor activo a la Polaca temporal */
+        pilaGestoresPolaca.push(lambdaBodyBuffer);
+        
+        $$ = formal;
+    }
+    ;
+lambda_expresion
+    : lambda_prefix LBRACE if_simple RBRACE LPAREN lambda_argumento RPAREN 
+    {
+        SymbolEntry formal = currentLambdaFormal;
+        PolacaElement real = (PolacaElement)$6; // lambda_argumento
+    
+        @SuppressWarnings("unchecked")
+        List<Integer> listaBF = (List<Integer>)$3; // if_simple retorna la lista
+        
+
+        pilaGestoresPolaca.pop(); // Sacamos lambdaBodyBuffer
+        
+        lambdaAssignBuffer = new PolacaInversa(symbolTable);
+        
+        /* Generar la asignación en el buffer temporal */
+        lambdaAssignBuffer.generateAssignment(formal, real);
+        
+        
+        PolacaInversa mainPI = PI(); // Polaca principal (MAINLAMBDATEST)
+        
+        /* 4.1: Añadir la asignación primero */
+        int offsetAsignacion = mainPI.getCurrentAddress();
+        mainPI.appendPolaca(lambdaAssignBuffer);
+        
+        int offsetCuerpo = mainPI.getCurrentAddress();
+        mainPI.appendPolaca(lambdaBodyBuffer);
+        
+        
+        int desplazamientoAsignacion = lambdaAssignBuffer.getSize();
+        
+        List<Integer> listaBFAjustada = new ArrayList<>();
+        for (int bf : listaBF) {
+            listaBFAjustada.add(bf + offsetAsignacion + desplazamientoAsignacion - 1);
+        }
+        
+        int targetEndIf = mainPI.getCurrentAddress();
+        
+        mainPI.backpatch(listaBFAjustada, targetEndIf);
+        
+        lambdaBodyBuffer = null;
+        lambdaAssignBuffer = null;
+        currentLambdaFormal = null;
+        
+        symbolTable.popScope();
+        
+        if (!errorEnProduccion) {
+            System.out.println("Línea " + lexer.getContext().getLine() + 
+                ": Lambda correcta para " + formal.getLexeme());
+        }
+        
+        yyval.Polacaelement = new PolacaElement("void");
+    }
+    | lambda_prefix error if_simple RBRACE 
+      LPAREN lambda_argumento RPAREN
+    { 
+        addError("Falta delimitador '{' de apertura en la función Lambda.");
+        symbolTable.popScope(); 
+        $$ = new PolacaElement("error");
+    }
+
+
+    | lambda_prefix LBRACE if_simple error 
+      LPAREN lambda_argumento RPAREN
+    { 
+        addError("Falta delimitador '}' de cierre en la función Lambda.");
+        symbolTable.popScope(); 
+        $$ = new PolacaElement("error");
+    }
+
+    
+    | lambda_prefix LBRACE if_simple
+     RBRACE 
+      LPAREN lambda_argumento error
+    { 
+        addError("Falta el paréntesis de cierre ')' para la invocación Lambda.");
+        symbolTable.popScope(); 
+        $$ = new PolacaElement("error");
+    }
+;
+
+lambda_argumento
+    : ID
+    {
+        $$ = PI().generateOperand($1);
+    }
+    | INT16
+    {
+        $$ = PI().generateOperand($1);
+    }
+    | FLOAT32;
+    {
+        $$ = PI().generateOperand($1);
+    }
+
+%%
+
+/* ======= Código Java adicional (opcional) ======= */
