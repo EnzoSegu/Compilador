@@ -1,14 +1,9 @@
 PRUEBAINTEGRAL {
-    ## 1. DECLARACION DE VARIABLES (Tema 11 - Var/Inferencia) ##
     var A, B, RESULTADO;
     var CONTADOR;
     var FLOTANTE;
-
-    ## 2. ASIGNACION SIMPLE Y ARITMETICA ENTERA (Tema 1) ##
-    ## Nota: Usamos := para asignacion simple y sufijo I ##
     A := 10I;
     B := 5I;
-    
     print("--- INICIO DE PRUEBAS ---");
     print("A vale (10):");
     print(A);
@@ -26,7 +21,7 @@ PRUEBAINTEGRAL {
     print("Prueba TOF (12.5):");
     print(FLOTANTE);
 
-    ## 5. CICLO FOR ASCENDENTE (Tema 15) ##
+
     ## El compilador debe detectar que 1 <= 3 y generar incremento ##
     print("For Ascendente (1 to 3):");
     for (CONTADOR from 1I to 3I) {
@@ -43,7 +38,7 @@ PRUEBAINTEGRAL {
     ## 7. ASIGNACION MULTIPLE (Tema 16) ##
     ## Nota: Usamos = para asignacion multiple segun tu gramatica ##
     print("Asignacion Multiple A,B = 1,2:");
-    A, B = 1I, 2I;
+    A := 1I;
     print(A);
     print(B);
 

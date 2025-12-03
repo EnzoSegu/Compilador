@@ -178,6 +178,7 @@ import codigointermedio.*;
 %token CV CR LE_KW TOF
 %token ERROR EOF
 %token INT_KW FLOAT_KW STRING_KW
+%type <entry> identificador
 
 %type <contextfor> encabezado_for
 %type <Polacaelement> expresion termino factor conversion_tof invocacion_funcion condicion lambda_argumento lambda_expresion
@@ -207,7 +208,7 @@ input
 
 // programa
 inicio_programa
-    : ID 
+    : identificador 
       { 
           SymbolEntry se_prog = (SymbolEntry)$1;
           SymbolTable symTab = symbolTable;
@@ -314,13 +315,26 @@ declaracion_variable
             listaVariablesError = false; 
         }
     ;
-
+identificador
+    : ID 
+      { 
+          $$ = $1; 
+      }
+    | ID UNDERSCORE ID 
+      { 
+          /* Reportamos el error personalizado */
+          yyerror("Error: Identificador inválido '" + $1.getLexeme() + "_" + $3.getLexeme() + "'. El caracter '_' no está permitido en los identificadores.", true);
+          
+          /* RECUPERACIÓN: Asumimos que el usuario quería usar el primer ID para seguir compilando */
+          $$ = $1; 
+      }
+    ;
 identificador_completo
-    : ID
+    : identificador
     {    
         $$ = $1;
     }
-    | identificador_completo POINT ID {
+    | identificador_completo POINT identificador {
         // Caso prefijado: MAIN.A
         SymbolEntry scopeID = (SymbolEntry)$1;
         SymbolEntry varID = (SymbolEntry)$3;
@@ -424,7 +438,7 @@ identificador_destino:
 
 
 inicio_funcion
-    : lista_tipos ID
+    : lista_tipos identificador
       { 
           @SuppressWarnings("unchecked")
           ArrayList<SymbolEntry> tiposRetorno = (ArrayList<SymbolEntry>)$1;
@@ -503,14 +517,14 @@ lista_tipos
     : tipo
         {
             ArrayList<SymbolEntry> lista = new ArrayList<>();
-            lista.add($1);
+            lista.add((SymbolEntry)$1);
             $$ = lista;
         }
     | lista_tipos COMMA tipo
         {
             @SuppressWarnings("unchecked")
             ArrayList<SymbolEntry> lista = (ArrayList<SymbolEntry>)$1;
-            lista.add($3);
+            lista.add((SymbolEntry)$3);
             $$ = lista;
         }
     | lista_tipos tipo
@@ -686,20 +700,27 @@ sentencia_return
     ;
 
 sentencia_ejecutable
-    : asignacion SEMICOLON
-    | sentencia_return 
+    : asignacion 
+    | sentencia_return
     | sentencia_print SEMICOLON
+    | sentencia_print error { 
+        // Detección específica para print
+        addError("Error Sintáctico: Falta punto y coma ';' al final de la sentencia PRINT."); 
+    }
     | sentencia_if
     | sentencia_for
     | lambda_expresion
     ;
-
 sentencia_ejecutable_sin_return
-    : asignacion SEMICOLON
+    : asignacion 
     | sentencia_print SEMICOLON
+    | sentencia_print error { 
+        addError("Error Sintáctico: Falta punto y coma ';' al final del PRINT (en función)."); 
+    }
     | sentencia_if
     | sentencia_for
     | lambda_expresion
+    ;
     ;
 
 sentencia_print
@@ -970,12 +991,10 @@ operador_comparacion
 
 
 asignacion
-    : identificador_destino ASSIGN_COLON expresion
-        { 
+    : identificador_destino ASSIGN_COLON expresion SEMICOLON {
             SymbolEntry destino = (SymbolEntry)$1;
             PolacaElement fuente = (PolacaElement)$3;
-
-        if (errorEnProduccion) {
+            if (errorEnProduccion) {
                         errorEnProduccion = false; 
                     } else {
                     if (destino.getUso() == null && !destino.getUso().equals("variable")) {
@@ -999,8 +1018,8 @@ asignacion
                         PI().generateAssignment(destino, fuente);
                     }
                 }
-        }    
-| lista_variables_destino ASSIGN lista_expresiones
+        }
+| lista_variables_destino ASSIGN lista_expresiones SEMICOLON
     {    
         ArrayList<PolacaElement> listaFuentes = (ArrayList<PolacaElement>)$3;
         ArrayList<SymbolEntry> listaDestinos = (ArrayList<SymbolEntry>)$1;
@@ -1116,7 +1135,17 @@ asignacion
         
         listaVariablesError = false;
         listaExpresionesError = false;
-    };
+    }
+     identificador_destino ASSIGN_COLON expresion error
+        { 
+            addError("Error Sintáctico: Falta punto y coma ';' al final de la asignación.");
+            // Opcional: Ejecutar la lógica de asignación si quieres recuperar la semántica
+        }
+    | lista_variables_destino ASSIGN lista_expresiones error
+            { 
+                addError("Error Sintáctico: Falta punto y coma ';' al final de la asignación múltiple.");
+            }
+        ;  
 
 lista_expresiones
     : expresion
@@ -1133,10 +1162,19 @@ lista_expresiones
             lista.add($3);
             $$ = lista; 
     }
-    | lista_expresiones error expresion
-        { 
-            listaExpresionesError = true; 
-            errorEnProduccion = true; // Activar
+| lista_expresiones expresion
+        {
+            // 1. Reportamos el error claro y específico
+            addError("Error Sintáctico: Falta separador ',' entre las expresiones de la lista.");
+            
+            // 2. RECUPERACIÓN: Agregamos el elemento de todas formas para no romper la compilación
+            @SuppressWarnings("unchecked")
+            List<PolacaElement> lista = (List<PolacaElement>)$1;
+            if (lista == null) lista = new ArrayList<>();
+            lista.add((PolacaElement)$2); // Agregamos la expresión ($2) a la lista
+            
+            // 3. Devolvemos la lista "reparada"
+            $$ = lista;
         }
     ;
 
@@ -1251,14 +1289,23 @@ factor
     }
 | INT16 
         {
+            // CORRECCIÓN: Capturar y añadir la constante a la TS
+            SymbolEntry se_const = (SymbolEntry)$1;
+            symbolTable.add(se_const);
             $$ = PI().generateOperand($1);
         }
 | FLOAT32 
         { 
+            // CORRECCIÓN: Capturar y añadir la constante a la TS
+            SymbolEntry se_const = (SymbolEntry)$1;
+            symbolTable.add(se_const);
             $$ = PI().generateOperand($1);
         }
 | STRING  
       { 
+          // CORRECCIÓN: Capturar y añadir la constante a la TS
+          SymbolEntry se_const = (SymbolEntry)$1;
+          symbolTable.add(se_const);
           $$ = PI().generateOperand($1); 
       }
 | invocacion_funcion

@@ -20,15 +20,32 @@ B_PRUEBAINTEGRAL DD ?
 RESULTADO_PRUEBAINTEGRAL DD ?
 CONTADOR_PRUEBAINTEGRAL DD ?
 FLOTANTE_PRUEBAINTEGRAL DD ?
+CTE_10I         DD 10I
+CTE_5I          DD 5I
+CTE_____INICIO_DE_PRUEBAS____ DB "-- INICIO DE PRUEBAS --", 0
+CTE_A_vale_(10)_ DB " vale (10)", 0
 @T1_PRUEBAINTEGRAL DD ?
+CTE_Correcto__A_es_mayor_que_B DB "orrecto: A es mayor que ", 0
+CTE_Error__A_no_deberia_ser_menor DB "rror: A no deberia ser meno", 0
 @T2_PRUEBAINTEGRAL DD ?
+CTE_2_5         DD 2.5
 @T3_PRUEBAINTEGRAL DD ?
+CTE_Prueba_TOF_(12_5)_ DB "rueba TOF (12.5)", 0
+CTE_For_Ascendente_(1_to_3)_ DB "or Ascendente (1 to 3)", 0
+CTE_1I          DD 1I
+CTE_3I          DD 3I
 @T4_PRUEBAINTEGRAL DD ?
 @T5_PRUEBAINTEGRAL DD ?
+CTE_For_Descendente_(3_to_1)_ DB "or Descendente (3 to 1)", 0
 @T6_PRUEBAINTEGRAL DD ?
 @T7_PRUEBAINTEGRAL DD ?
+CTE_Asignacion_Multiple_A,B_=_1,2_ DB "signacion Multiple A,B = 1,2", 0
+CTE_Prueba_Lambda_(Imprime_100)_ DB "rueba Lambda (Imprime 100)", 0
 A_PRUEBAINTEGRAL_LAMBDA_ANON_1 DD ?
+CTE_5I          DD 5I
 @T8_PRUEBAINTEGRAL_LAMBDA_ANON_1 DD ?
+CTE_A_es_mayor  DB " es mayo", 0
+CTE_____FIN_DE_PRUEBAS____ DB "-- FIN DE PRUEBAS --", 0
 
 ; Rutinas de error de Runtime
 _DIV_CERO       DB "Error en runtime: Division por cero!", 0
@@ -77,4 +94,12 @@ L_13:	L_14:	L_15:		MOV EAX, _A_PRUEBAINTEGRAL_LAMBDA_ANON_1
 	JMP L_STORE_15
 L_SET_1_15:
 	MOV EAX, 1
-L_STORE_1
+L_STORE_15:
+	MOV _@T1_PRUEBAINTEGRAL, EAX
+L_16:	L_17:		; ASIGNACION REDUNDANTE OMITIDA (Operando no es SymbolEntry)
+L_18:	L_19:		; Salto si Falso (BF) a L_23
+	MOV EAX, _@T1_PRUEBAINTEGRAL
+	CMP EAX, 0
+	JE L_23
+L_20:	L_21:		PUSH OFFSET _CTE_Correcto__A_es_mayor_que_B
+	C

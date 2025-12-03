@@ -1,7 +1,8 @@
+package parser;
+import codigointermedio.*;
+import lexer.*;
 import java.util.ArrayList;
 import java.util.List;
-import lexer.*;
-import codigointermedio.*;
 public class ParserVal
 {
     public int ival;
@@ -31,16 +32,15 @@ public class ParserVal
     public ParserVal(String val) { sval = val; }
     public ParserVal(Object val) { obj = val; }
 
-    // 👇 Constructores opcionales
     public ParserVal(SymbolEntry val) { entry = val; }
     public ParserVal(PolacaElement val) { Polacaelement = val; }
     public ParserVal(ArrayList<SymbolEntry> val) { listSe = val; }
     public ParserVal(List<PolacaElement> val) { listPe = val; }
     public ParserVal(ForContext val) { contextfor = val; }
-    public ParserVal(String[] val) { 
-        this.semantica = val; 
+    public ParserVal(String[] val) {
+        this.semantica = val;
     }
-    public ParserVal(ParametroInvocacion val) { 
-        this.paramInv = val; 
+    public ParserVal(ParametroInvocacion val) {
+        this.paramInv=val;
     }
 }

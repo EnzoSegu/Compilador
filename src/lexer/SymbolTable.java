@@ -78,10 +78,11 @@ public class SymbolTable {
         if (currentScope.containsKey(lexeme)) {
             return false; // Error: Redeclaración en el mismo ámbito
         }
-
-        // Aplicar "Name Mangling" (Tema 23)
-        String mangledName = lexeme + getCurrentScopeMangledName();
-        entry.setMangledName(mangledName);
+        if (!"constante".equals(entry.getUso())) {
+            // Aplicar Name Mangling de ámbito para variables y funciones.
+            String mangledName = lexeme + getCurrentScopeMangledName();
+            entry.setMangledName(mangledName);
+        }
 
         currentScope.put(lexeme, entry);
         allEntries.add(entry);
