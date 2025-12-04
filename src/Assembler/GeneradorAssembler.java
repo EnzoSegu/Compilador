@@ -1,8 +1,11 @@
 package Assembler;
 import lexer.*;
+import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Set;
+import java.util.HashSet; 
 
 import codigointermedio.PolacaEntry;
 import codigointermedio.PolacaInversa;
@@ -10,12 +13,8 @@ import codigointermedio.PolacaInversa;
 public class GeneradorAssembler {
     
     private final Map<String, PolacaInversa> polacaCompleta; 
-    
-    // La instancia única de la Tabla de Símbolos
     private final SymbolTable symbolTable;
-    private final FileWriter writer;
-    
-    // Variable de estado crucial para los chequeos de recursión y salto
+    private final BufferedWriter writer;
     private String currentFunctionName = ""; 
 
     public GeneradorAssembler(Map<String, PolacaInversa> polacaCompleta, 
@@ -23,14 +22,17 @@ public class GeneradorAssembler {
                               String filename) throws IOException {
         this.polacaCompleta = polacaCompleta;
         this.symbolTable = symbolTable;
-        this.writer = new FileWriter(filename);
+        this.writer = new BufferedWriter(new FileWriter(filename));
     }
     
     public void generate() throws IOException {
-        generateHeader();
-        generateDataSegment();
-        generateCodeSegment(); // Esto contendrá el motor principal (MAIN) y las funciones
-        writer.close();
+        try {
+            generateHeader();
+            generateDataSegment();
+            generateCodeSegment(); // main + funciones
+        } finally {
+            writer.close();
+        }
     }
     
     private void generateHeader() throws IOException {
@@ -55,92 +57,154 @@ public class GeneradorAssembler {
         writer.write(".DATA\n");
         writer.write("; Variables Auxiliares (DD ?) y Constantes\n");
 
+        Set<String> emittedSymbols = new HashSet<>();
+
         for (SymbolEntry entry : symbolTable.getAllEntries()) { 
             String uso = entry.getUso();
             String tipo = entry.getTipo();
-            // Usamos getAsmName para sanitizar el nombre también aquí
-            String asmName = getAsmName(entry).substring(1); // Quitamos el "_" inicial generado por getAsmName
+            // Uso getAsmName completo (incluye prefijo '_') para que DATA y CODE coincidan
+            String asmName = getAsmName(entry); 
+
+            if (emittedSymbols.contains(asmName)) {
+                continue; 
+            }
 
             // 1. Variables, Parámetros y Temporales (Asignación de espacio)
             if ("variable".equals(uso) || "parametro".equals(uso) || "temporal".equals(uso) || "parametro_lambda".equals(uso)) {
-                // Los temporales booleanos pueden ser DB para ahorrar espacio, pero DD también funciona.
-                writer.write(String.format("%-15s DD ?\n", asmName)); 
+                writer.write(String.format("%-40s DD ?\n", asmName)); 
+                emittedSymbols.add(asmName);
             } 
-            
             // 2. Constantes
             else if ("constante".equals(uso)) {
                 String lexeme = entry.getLexeme();
-                
+                if (lexeme == null) lexeme = "";
+
+                // Limpiar espacios invisibles
+                String cleanLexeme = lexeme.replaceAll("\\s", "");
+
+                // Si es una constante numérica con sufijo 'I' (ej 10I) lo removemos
+                if (cleanLexeme.endsWith("I") || cleanLexeme.endsWith("i")) {
+                    cleanLexeme = cleanLexeme.substring(0, cleanLexeme.length()-1);
+                }
+
                 if ("int".equals(tipo) || "float".equals(tipo)) {
-                    // Constantes numéricas (ambos usan DD en el segmento de datos)
-                    writer.write(String.format("%-15s DD %s\n", asmName, lexeme));
+                    if (cleanLexeme.isEmpty()) {
+                        // seguridad: si no hay literal numérico, inicializo a 0
+                        cleanLexeme = "0";
+                    }
+                    writer.write(String.format("%-40s DD %s\n", asmName, cleanLexeme));
+                    emittedSymbols.add(asmName);
                 }
                 else if ("string".equals(tipo)) {
-                    // Constantes de cadena (Usan DB - Define Byte, con terminador nulo)
-                    // Eliminamos las comillas externas antes de guardar en DB (ej: "Hola" -> Hola)
-                    String content = lexeme.substring(1, lexeme.length() - 1);
-                    writer.write(String.format("%-15s DB \"%s\", 0\n", asmName, content));
+                    // Defensive: si lexeme no tiene comillas, lo tratamos como contenido crudo
+                    String content;
+                    if (lexeme.length() >= 2 && lexeme.charAt(0) == '"' && lexeme.charAt(lexeme.length()-1) == '"') {
+                        content = lexeme.substring(1, lexeme.length() - 1);
+                    } else {
+                        content = lexeme;
+                    }
+                    // Escapar comillas internas para MASM
+                    content = content.replace("\"", "\\\"");
+                    // Si está vacío, al menos emitimos una cadena vacía terminada en 0
+                    writer.write(String.format("%-40s DB \"%s\", 0\n", asmName, content));
+                    emittedSymbols.add(asmName);
+                } else {
+                    // Uso desconocido: declarar como DD ? por seguridad
+                    writer.write(String.format("%-40s DD ? ; (const desconocida tipo=%s lex=%s)\n", asmName, tipo, lexeme));
+                    emittedSymbols.add(asmName);
                 }
+            } else {
+                // Otros usos inesperados: declarar como DD ?
+                writer.write(String.format("%-40s DD ? ; (uso=%s tipo=%s)\n", asmName, uso, entry.getTipo()));
+                emittedSymbols.add(asmName);
             }
         }
         
-        // 3. Mensajes de Error de Runtime (Obligatorio por TP4)
+        // Añadir la constante '_CTE_1' usada internamente para FORs si no existe
+        if (!emittedSymbols.contains("_CTE_1")) {
+             writer.write(String.format("%-40s DD 1\n", "_CTE_1"));
+             emittedSymbols.add("_CTE_1");
+        }
+        
+        // Mensajes de Error de Runtime (asegurar que estén presentes)
         writer.write("\n; Rutinas de error de Runtime\n");
-        writer.write("_DIV_CERO       DB \"Error en runtime: Division por cero!\", 0\n");
-        writer.write("_OVERFLOW_FLOAT DB \"Error en runtime: Overflow de flotante!\", 0\n");
-        writer.write("_RECURSION_ERR  DB \"Error en runtime: Recursion directa prohibida!\", 0\n");
+        if (!emittedSymbols.contains("_DIV_CERO")) {
+            writer.write(String.format("%-40s DB \"%s\", 0\n", "_DIV_CERO", "Error en runtime: Division por cero!"));
+            emittedSymbols.add("_DIV_CERO");
+        }
+        if (!emittedSymbols.contains("_OVERFLOW_FLOAT")) {
+            writer.write(String.format("%-40s DB \"%s\", 0\n", "_OVERFLOW_FLOAT", "Error en runtime: Overflow de flotante!"));
+            emittedSymbols.add("_OVERFLOW_FLOAT");
+        }
+        if (!emittedSymbols.contains("_RECURSION_ERR")) {
+            writer.write(String.format("%-40s DB \"%s\", 0\n", "_RECURSION_ERR", "Error en runtime: Recursion directa prohibida!"));
+            emittedSymbols.add("_RECURSION_ERR");
+        }
         writer.write("\n");
     }
 
     private void generateCodeSegment() throws IOException {
-    writer.write(".CODE\n");
-    
-    // Rutina de error para división por cero
-    writer.write("_RTH_DIV_CERO:\n");
-    writer.write("\tPUSH OFFSET _DIV_CERO\n");
-    writer.write("\tCALL _print_string\n");
-    writer.write("\tADD ESP, 4\n");
-    writer.write("\tJMP _EXIT_PROGRAM\n");
-    
-    // Rutina de error para Overflow de flotante (Fix A2005)
-    writer.write("_RTH_OVERFLOW_FLOAT:\n");
-    writer.write("\tPUSH OFFSET _OVERFLOW_FLOAT\n");
-    writer.write("\tCALL _print_string\n");
-    writer.write("\tADD ESP, 4\n");
-    writer.write("\tJMP _EXIT_PROGRAM\n");
-    
-    // Rutina de error para recursión directa (Fix A2006)
-    writer.write("_RTH_RECURSION_DIRECTA:\n");
-    writer.write("\tPUSH OFFSET _RECURSION_ERR\n");
-    writer.write("\tCALL _print_string\n");
-    writer.write("\tADD ESP, 4\n");
-    writer.write("\tJMP _EXIT_PROGRAM\n");
-    
-    for (Map.Entry<String, PolacaInversa> entry : polacaCompleta.entrySet()) {
-        String funcName = entry.getKey();
-        PolacaInversa polaca = entry.getValue();
+        writer.write(".CODE\n");
         
-        this.currentFunctionName = funcName; // Establecer el contexto actual
+        // Rutina de error para división por cero
+        writer.write("_RTH_DIV_CERO:\n");
+        writer.write("\tPUSH OFFSET _DIV_CERO\n");
+        writer.write("\tCALL _print_string\n");
+        writer.write("\tADD ESP, 4\n");
+        writer.write("\tJMP _EXIT_PROGRAM\n");
         
-        // El MAIN es un caso especial
-        if (funcName.contains("MAIN")) { 
+        // Rutina de error para Overflow de flotante (Fix A2005)
+        writer.write("_RTH_OVERFLOW_FLOAT:\n");
+        writer.write("\tPUSH OFFSET _OVERFLOW_FLOAT\n");
+        writer.write("\tCALL _print_string\n");
+        writer.write("\tADD ESP, 4\n");
+        writer.write("\tJMP _EXIT_PROGRAM\n");
+        
+        // Rutina de error para recursión directa (Fix A2006)
+        writer.write("_RTH_RECURSION_DIRECTA:\n");
+        writer.write("\tPUSH OFFSET _RECURSION_ERR\n");
+        writer.write("\tCALL _print_string\n");
+        writer.write("\tADD ESP, 4\n");
+        writer.write("\tJMP _EXIT_PROGRAM\n");
+        
+        String mainFuncName = null;
+        PolacaInversa mainPolaca = null;
+
+        for (Map.Entry<String, PolacaInversa> entry : polacaCompleta.entrySet()) {
+            String funcName = entry.getKey();
+            PolacaInversa polaca = entry.getValue();
+            
+            if (funcName != null && funcName.toUpperCase().contains("MAIN")) {
+                mainFuncName = funcName;
+                mainPolaca = polaca;
+            } else {
+                this.currentFunctionName = funcName; 
+                generateFunctionCode(funcName, polaca);
+            }
+        }
+
+        // Generar el punto de entrada 'start' y la definición PROC/ENDP para MAIN.
+        if (mainFuncName != null) {
+            this.currentFunctionName = mainFuncName;
+            
+            // 1. Generar el punto de entrada y salida del programa
             writer.write("\nstart:\n");
-            // Llamamos a la función principal del programa
-            writer.write(String.format("\tCALL _%s\n", funcName.replace(":", "_"))); 
+            writer.write(String.format("\tCALL _%s\n", mainFuncName.replace(":", "_"))); 
             writer.write("_EXIT_PROGRAM:\n");
             writer.write("\tINVOKE ExitProcess, 0\n"); 
+            
+            // 2. Generar la función principal PROC/ENDP
+            generateFunctionCode(mainFuncName, mainPolaca);
         } else {
-            generateFunctionCode(funcName, polaca);
+            // seguridad: si no hay MAIN generamos etiqueta start vacía para END start no falle
+            writer.write("\nstart:\n");
+            writer.write("\t; NO SE ENCONTRO MAIN - start vacio\n");
+            writer.write("_EXIT_PROGRAM:\n");
+            writer.write("\tINVOKE ExitProcess, 0\n");
         }
+        
+        writer.write("END start\n");
     }
-    
-    // Como el MAIN real debe ser una función, se genera aquí el procedimiento
-    if (polacaCompleta.containsKey(currentFunctionName)) { 
-         generateFunctionCode(currentFunctionName, polacaCompleta.get(currentFunctionName));
-    }
-    
-    writer.write("END start\n");
-}
 
     private void generateFunctionCode(String funcName, PolacaInversa polaca) throws IOException {
         String asmName = funcName.replace(":", "_");
@@ -167,58 +231,52 @@ public class GeneradorAssembler {
     private void translatePolaca(PolacaInversa polaca) throws IOException {
         writer.write("\n\t; --- Traduccion Polaca Inversa (" + currentFunctionName + ") --- \n");
         Object instruction=null;
-        // Recorremos la Polaca por instrucciones (nos saltamos los operandos)
-        for (PolacaEntry entry : polaca.getCode()) {
-            
-            // 1. Generar Etiqueta de la Dirección
-            writer.write(String.format("L_%d:\t", entry.getAddress())); 
-        
-         instruction = entry.getValue();
-            String operator = null;
-            Integer targetAddress = null; // Usaremos Integer, no String
 
-        // 1. PRIORIDAD: Usar entry.getType() para operadores de control de flujo (BF/BI)
-            if (null != entry.getType() && (entry.getType().equals("BF") || entry.getType().equals("BI"))){
-            operator = entry.getType();
-            
-            // CRUCIAL: Capturar la dirección como Integer, ya que entry.getValue() es el número (33/36)
-            if (!(instruction instanceof Integer)) {
-                 writer.write("\t; ERROR: El valor del salto debe ser un entero.\n");
-                 continue;
-            }
-            targetAddress = (Integer)instruction;
-        } 
-        
-        // 2. Filtros Normales (solo se aplican si no fue un salto BF/BI)
-        if (operator == null) {
-            
-            if (instruction instanceof SymbolEntry) {
-                // Omitir operandos (variables, constantes, temporales)
-                continue; 
-            } 
-            else if (instruction instanceof Integer) {
-                 // Omitir valores numéricos que no son direcciones de BF/BI
-                 writer.write("\t; VALOR NUMÉRICO OMITIDO\n");
-                 continue;
-            }
-
-            // Asumir que la instrucción restante es un operador normal (String)
-            operator = instruction.toString();
+        if (polaca == null || polaca.getCode() == null) {
+            writer.write("\t; ERROR: Polaca nula o vacía para función " + currentFunctionName + "\n");
+            return;
         }
+
+        for (PolacaEntry entry : polaca.getCode()) {
+            if (entry == null) continue;
+            // 1. Generar Etiqueta de la Dirección
+            writer.write(String.format("L_%d:\n", entry.getAddress())); 
+            
+            instruction = entry.getValue();
+            String operator = null;
+            Integer targetAddress = null; // Usaremos Integer
+
+            // Prioridad saltos BF/BI
+            if (entry.getType() != null && (entry.getType().equals("BF") || entry.getType().equals("BI"))){
+                operator = entry.getType();
+                if (!(instruction instanceof Integer)) {
+                    writer.write("\t; ERROR: El valor del salto debe ser un entero (entrada addr=" + entry.getAddress() + ").\n");
+                    continue;
+                }
+                targetAddress = (Integer)instruction;
+            } 
+            
+            if (operator == null) {
+                if (instruction instanceof SymbolEntry) {
+                    writer.write("\t; OPERANDO OMITIDO\n"); 
+                    continue; 
+                } else if (instruction instanceof Integer) {
+                    writer.write("\t; VALOR NUMÉRICO OMITIDO\n"); 
+                    continue;
+                }
+                operator = instruction.toString();
+            }
             
             switch (operator) {
-                
-                // --- ESTRUCTURALES ---
                 case "PROC_":
                 case "ENDP_":
+                    writer.write("\t; INSTRUCCIÓN DE BLOQUE OMITIDA\n"); 
                     continue; 
                 
                 case "RETURN":
-                    // Retorno de la función (Epílogo)
                     writer.write("\tJMP _" + currentFunctionName.replace(":", "_") + "_EPILOGUE\n");
                     break;
                 
-                // --- OPERACIONES ARITMÉTICAS BÁSICAS ---
                 case "+":
                 case "-":
                 case "*":
@@ -226,11 +284,9 @@ public class GeneradorAssembler {
                     break;
 
                 case "/":
-                    // REQUIERE CHEQUEO DE DIVISIÓN POR CERO (Mandatorio por TP4)
                     translateDivision(polaca, entry);
                     break;
                 
-                // --- ASIGNACIÓN Y FLUJO ---
                 case "ASSIGN":
                     translateAssignment(polaca, entry);
                     break;
@@ -243,13 +299,12 @@ public class GeneradorAssembler {
                     translateCall(polaca, entry);
                     break;
                     
-                // --- JUMPS Y CONVERSIONES ---
                 case "BI":
                 case "BF":
                     translateJump(polaca,entry,operator, targetAddress);
                     break;
                     
-                case "TOF": // To Float (Conversión Explícita)
+                case "TOF":
                     translateConversion(polaca, entry);
                     break;
 
@@ -270,6 +325,11 @@ public class GeneradorAssembler {
         writer.write("\n\t; --- Fin Traduccion Polaca Inversa --- \n");
     }
 
+    private PolacaEntry safeGet(PolacaInversa polaca, int address) {
+        if (polaca == null || polaca.getCode() == null) return null;
+        if (address < 0 || address >= polaca.getCode().size()) return null;
+        return polaca.getEntryAt(address);
+    }
 
     private String getAsmName(SymbolEntry entry) {
         if (entry == null) return "NULL_ENTRY";
@@ -277,295 +337,293 @@ public class GeneradorAssembler {
         
         if (mangled == null || mangled.isEmpty()) {
             mangled = entry.getLexeme();
+            if (mangled == null) mangled = "anon";
         }
-        // Prefijo "_" y reemplazo de caracteres no permitidos en etiquetas MASM
-        // Se añade el reemplazo de espacios en blanco, '+', '-' para evitar etiquetas MASM inválidas.
-        return "_" + mangled.replace(":", "_").replace(".", "_").replace("\"", "").replace(" ", "_").replace("+", "_").replace("-", "_");
+        return "_" + mangled.replace(":", "_").replace(".", "_").replace("\"", "").replace(" ", "_")
+                .replace("+", "_").replace("-", "_").replace("(", "_").replace(")", "_").replace(",", "_");
     }
 
+    private String normalizeFuncKeyToAsm(String funcName) {
+        if (funcName == null) return "";
+        return "_" + funcName.replace(":", "_");
+    }
 
     private String getIntInstruction(String op) {
-        String instruction;
         switch (op) {
-            case "+": instruction = "ADD"; break;
-            case "-": instruction = "SUB"; break;
-            case "*": instruction = "IMUL"; break;
-            default: instruction = ""; break;
+            case "+": return "ADD";
+            case "-": return "SUB";
+            case "*": return "IMUL";
+            default: return "";
         }
-        return instruction;
     }
 
     private String getFpuInstruction(String op) {
-        String instruction;
         switch (op) {
-            case "+": instruction = "FADD"; break;
-            case "-": instruction = "FSUB"; break;
-            case "*": instruction = "FMUL"; break;
-            case "/": instruction = "FDIV"; break;
-            default: instruction = ""; break;
+            case "+": return "FADD";
+            case "-": return "FSUB";
+            case "*": return "FMUL";
+            case "/": return "FDIV";
+            default: return "";
         }
-        return instruction;
     }
 
     private void translatePolacaArithmetic(PolacaInversa polaca, PolacaEntry entry, String operator) throws IOException {
-        
-        PolacaEntry targetEntry = polaca.getEntryAt(entry.getAddress() + 1);
+        PolacaEntry targetEntry = safeGet(polaca, entry.getAddress() + 1);
+        PolacaEntry op2Entry = safeGet(polaca, entry.getAddress() - 1);
+        PolacaEntry op1Entry = safeGet(polaca, entry.getAddress() - 2);
+
+        if (targetEntry == null || op1Entry == null || op2Entry == null) {
+            writer.write("\t; ERROR: entradas faltantes para operacion aritmetica en addr " + entry.getAddress() + "\n");
+            return;
+        }
+        if (!(targetEntry.getValue() instanceof SymbolEntry) || !(op1Entry.getValue() instanceof SymbolEntry) || !(op2Entry.getValue() instanceof SymbolEntry)) {
+            writer.write("\t; ERROR: algun operando no es SymbolEntry en aritmetica addr " + entry.getAddress() + "\n");
+            return;
+        }
+
         SymbolEntry target = (SymbolEntry) targetEntry.getValue();
-        String opType = target.getTipo(); 
-        
-        PolacaEntry op2Entry = polaca.getEntryAt(entry.getAddress() - 1);
-        PolacaEntry op1Entry = polaca.getEntryAt(entry.getAddress() - 2);
         SymbolEntry op1 = (SymbolEntry) op1Entry.getValue();
         SymbolEntry op2 = (SymbolEntry) op2Entry.getValue();
-        
-        // --- LÓGICA DE TRADUCCIÓN ---
+        String opType = target.getTipo();
+
         if ("int".equals(opType)) {
-            writer.write(String.format("\tMOV EAX, %s\n", getAsmName(op1)));
-            writer.write(String.format("\t%s EAX, %s\n", getIntInstruction(operator), getAsmName(op2)));
-            writer.write(String.format("\tMOV %s, EAX\n", getAsmName(target)));
-        } 
-        else if ("float".equals(opType)) {
-            // FPU: ST(1) = OP1, ST(0) = OP2. OPERATOR -> ST(0) = ST(1) op ST(0)
-            writer.write(String.format("\tFLD %s\n", getAsmName(op1))); 
-            writer.write(String.format("\tFLD %s\n", getAsmName(op2))); 
-            writer.write(String.format("\t%s\n", getFpuInstruction(operator)));
-            
-            // --- IMPLEMENTACIÓN DEL CHEQUEO DE OVERFLOW FLOTANTE (TP4) ---
+            writer.write("\tMOV EAX, " + getAsmName(op1) + "\n");
+            writer.write("\t" + getIntInstruction(operator) + " EAX, " + getAsmName(op2) + "\n");
+            writer.write("\tMOV " + getAsmName(target) + ", EAX\n");
+        } else if ("float".equals(opType)) {
+            writer.write("\tFLD DWORD PTR " + getAsmName(op1) + "\n");
+            writer.write("\tFLD DWORD PTR " + getAsmName(op2) + "\n");
+            writer.write("\t" + getFpuInstruction(operator) + "\n");
             writer.write("\t; Chequeo de Overflow/Underflow Flotante\n");
-            writer.write("\tFWAIT\n"); // Espera a que la operación FPU termine
-            writer.write("\tFNSTSW AX\n"); // Guarda el FPU Status Word en AX (No destruye la pila)
-            writer.write("\tTEST AH, 0004h\n"); // Chequea el bit OE (Overflow Exception) en el byte alto de AX (AH)
-            writer.write("\tJNE _OVERFLOW_FLOAT\n"); 
-            // Nota: El bit 0004h (bit 2) es el OE. Si es necesario chequear Underflow (UE), se usa 0002h.
-            
-            writer.write(String.format("\tFSTP %s\n", getAsmName(target)));
+            writer.write("\tFWAIT\n");
+            writer.write("\tFNSTSW AX\n");
+            writer.write("\tTEST AH, 0004h\n");
+            writer.write("\tJNE _RTH_OVERFLOW_FLOAT\n");
+            writer.write("\tFSTP DWORD PTR " + getAsmName(target) + "\n");
+        } else {
+            writer.write("\t; ERROR: tipo no manejado en aritmetica: " + opType + "\n");
         }
     }
 
     private void translateDivision(PolacaInversa polaca, PolacaEntry entry) throws IOException {
-        
-        PolacaEntry op2Entry = polaca.getEntryAt(entry.getAddress() - 1);
-        PolacaEntry op1Entry = polaca.getEntryAt(entry.getAddress() - 2);
-        PolacaEntry targetEntry = polaca.getEntryAt(entry.getAddress() + 1);
-        
+        PolacaEntry op2Entry = safeGet(polaca, entry.getAddress() - 1);
+        PolacaEntry op1Entry = safeGet(polaca, entry.getAddress() - 2);
+        PolacaEntry targetEntry = safeGet(polaca, entry.getAddress() + 1);
+
+        if (op1Entry == null || op2Entry == null || targetEntry == null) {
+            writer.write("\t; ERROR: entradas faltantes para division en addr " + entry.getAddress() + "\n");
+            return;
+        }
+        if (!(op1Entry.getValue() instanceof SymbolEntry) || !(op2Entry.getValue() instanceof SymbolEntry) || !(targetEntry.getValue() instanceof SymbolEntry)) {
+            writer.write("\t; ERROR: algunos operandos no son SymbolEntry en division addr " + entry.getAddress() + "\n");
+            return;
+        }
+
         SymbolEntry op1 = (SymbolEntry) op1Entry.getValue();
         SymbolEntry op2 = (SymbolEntry) op2Entry.getValue();
         SymbolEntry target = (SymbolEntry) targetEntry.getValue();
         String opType = op2.getTipo();
 
         if ("int".equals(opType)) {
-            // --- INTEGER DIVISION (IDIV/DIV) con Chequeo de Cero ---
             writer.write("\t; Chequeo de division por cero (INT)\n");
-            writer.write(String.format("\tMOV EBX, %s\n", getAsmName(op2)));
+            writer.write("\tMOV EBX, " + getAsmName(op2) + "\n");
             writer.write("\tCMP EBX, 0\n");
-            writer.write("\tJE _ERROR_DIV_CERO\n"); 
-            
-            writer.write(String.format("\tMOV EAX, %s\n", getAsmName(op1))); 
-            writer.write("\tCDQ\n"); 
+            writer.write("\tJE _RTH_DIV_CERO\n");
+            writer.write("\tMOV EAX, " + getAsmName(op1) + "\n");
+            writer.write("\tCDQ\n");
             writer.write("\tIDIV EBX\n");
-            
-            writer.write(String.format("\tMOV %s, EAX\n", getAsmName(target)));
-        } 
-        else if ("float".equals(opType)) {
-            // --- FLOAT DIVISION (FDIV) con Chequeo de Cero (FPU) ---
+            writer.write("\tMOV " + getAsmName(target) + ", EAX\n");
+        } else if ("float".equals(opType)) {
             writer.write("\t; Chequeo de division por cero (FLOAT)\n");
-            
-            // Cargar dividendo (OP1) y divisor (OP2)
-            writer.write(String.format("\tFLD %s\n", getAsmName(op1))); 
-            writer.write(String.format("\tFLD %s\n", getAsmName(op2))); 
-            
-            // Chequear el divisor (ST(0))
-            writer.write("\tFTST\n");  // Compara ST(0) con 0.0
+            writer.write("\tFLD DWORD PTR " + getAsmName(op1) + "\n");
+            writer.write("\tFLD DWORD PTR " + getAsmName(op2) + "\n");
+            writer.write("\tFTST\n");
             writer.write("\tFWAIT\n");
-            // Mover FPU Status Word (SW) a FLAGS de la CPU
             writer.write("\tFSTSW AX\n");
-            writer.write("\tSAHF\n"); 
-            
-            writer.write("\tJZ _ERROR_DIV_CERO\n"); // JZ (Jump Zero) = divisor es 0
-            
-            writer.write("\tFDIV\n"); 
-            
-            writer.write(String.format("\tFSTP %s\n", getAsmName(target)));
+            writer.write("\tSAHF\n");
+            writer.write("\tJZ _RTH_DIV_CERO\n");
+            writer.write("\tFDIV\n");
+            writer.write("\tFSTP DWORD PTR " + getAsmName(target) + "\n");
+        } else {
+            writer.write("\t; ERROR: tipo no manejado en division: " + opType + "\n");
         }
     }
 
     private void translateAssignment(PolacaInversa polaca, PolacaEntry entry) throws IOException {
-        
-        PolacaEntry targetEntry = polaca.getEntryAt(entry.getAddress() - 1);
+        PolacaEntry targetEntry = safeGet(polaca, entry.getAddress() - 1);
+        PolacaEntry op1Entry = safeGet(polaca, entry.getAddress() - 2);
+
+        if (targetEntry == null || op1Entry == null) {
+            writer.write("\t; ERROR: entradas faltantes para ASSIGN en addr " + entry.getAddress() + "\n");
+            return;
+        }
+        if (!(targetEntry.getValue() instanceof SymbolEntry)) {
+            writer.write("\t; ERROR: target ASSIGN no es SymbolEntry\n");
+            return;
+        }
+
         SymbolEntry target = (SymbolEntry) targetEntry.getValue();
-        
-        PolacaEntry op1Entry = polaca.getEntryAt(entry.getAddress() - 2);
         Object op1Value = op1Entry.getValue();
-        
+
         if (!(op1Value instanceof SymbolEntry op1)) {
              writer.write("\t; ASIGNACION REDUNDANTE OMITIDA (Operando no es SymbolEntry)\n");
-             return; // <--- ESTO ELIMINA EL ERROR VISUAL
+             return;
         }
 
         String asmTarget = getAsmName(target);
         String asmSource = getAsmName(op1);
 
-        // 1. Asignación de Enteros (CPU Registers)
         if ("int".equals(target.getTipo())) {
-            writer.write(String.format("\tMOV EAX, %s\n", asmSource));
-            writer.write(String.format("\tMOV %s, EAX\n", asmTarget));
-        } 
-        // 2. Asignación de Flotantes (FPU)
-        else if ("float".equals(target.getTipo())) {
-            writer.write(String.format("\tFLD %s\n", asmSource)); 
-            writer.write(String.format("\tFSTP %s\n", asmTarget)); 
+            writer.write("\tMOV EAX, " + asmSource + "\n");
+            writer.write("\tMOV " + asmTarget + ", EAX\n");
+        } else if ("float".equals(target.getTipo())) {
+            writer.write("\tFLD DWORD PTR " + asmSource + "\n");
+            writer.write("\tFSTP DWORD PTR " + asmTarget + "\n");
+        } else {
+            writer.write("\t; WARNING: tipo de asignacion no manejado: " + target.getTipo() + "\n");
         }
     }
-
 
     private void translateJump(PolacaInversa polaca, PolacaEntry entry, String operator, Integer targetAddress) throws IOException {
-    
-    // 1. Verificar si el operador fue identificado y la dirección extraída
-    if (targetAddress == null) {
-        writer.write("\t; ERROR CRITICO: La direccion de salto (BF/BI) no fue proporcionada.\n");
-        return;
-    }
-    
-    // 2. Generación del Assembly
-    if ("BI".equals(operator)) {
-        // Salto incondicional: Siempre JMP a la etiqueta de destino (L_XXX)
-        writer.write("\t; Salto incondicional (BI) a L_" + targetAddress + "\n");
-        writer.write(String.format("\tJMP L_%d\n", targetAddress));
-    } 
-    else if ("BF".equals(operator)) {
-        
-        // El resultado booleano (@T3) está en N-1
-        PolacaEntry resultEntry = polaca.getEntryAt(entry.getAddress() - 1);
-        
-        if (!(resultEntry.getValue() instanceof SymbolEntry)) {
-             writer.write("\t; ERROR: Operando booleano de BF no es SymbolEntry.\n");
-             return;
+        if (targetAddress == null) {
+            writer.write("\t; ERROR CRITICO: La direccion de salto (BF/BI) no fue proporcionada.\n");
+            return;
         }
-        SymbolEntry resultVar = (SymbolEntry) resultEntry.getValue();
-
-        // 1. Mover el resultado (0 o 1) a EAX
-        writer.write("\t; Salto si Falso (BF) a L_" + targetAddress + "\n");
-        writer.write(String.format("\tMOV EAX, %s\n", getAsmName(resultVar)));
-        // 2. Comparar con 0
-        writer.write("\tCMP EAX, 0\n");
-        // 3. Saltar si es Igual a 0 (Jump Equal = Salto si Falso)
-        writer.write(String.format("\tJE L_%d\n", targetAddress));
+        if ("BI".equals(operator)) {
+            writer.write("\t; Salto incondicional (BI) a L_" + targetAddress + "\n");
+            writer.write("\tJMP L_" + targetAddress + "\n");
+        } else if ("BF".equals(operator)) {
+            PolacaEntry resultEntry = safeGet(polaca, entry.getAddress() - 1);
+            if (resultEntry == null || !(resultEntry.getValue() instanceof SymbolEntry)) {
+                 writer.write("\t; ERROR: Operando booleano de BF no es SymbolEntry.\n");
+                 return;
+            }
+            SymbolEntry resultVar = (SymbolEntry) resultEntry.getValue();
+            writer.write("\t; Salto si Falso (BF) a L_" + targetAddress + "\n");
+            writer.write("\tMOV EAX, " + getAsmName(resultVar) + "\n");
+            writer.write("\tCMP EAX, 0\n");
+            writer.write("\tJE L_" + targetAddress + "\n");
+        }
     }
-}
 
     private void translateCall(PolacaInversa polaca, PolacaEntry entry) throws IOException {
-        
-        PolacaEntry targetEntry = polaca.getEntryAt(entry.getAddress() - 1); 
-        SymbolEntry targetFunc = (SymbolEntry) targetEntry.getValue(); 
-        String targetMangledName = targetFunc.getMangledName().replace(":", "_");
-        
-        // 1. CHEQUEO DE RECURSIÓN DIRECTA (TP4)
-        if (currentFunctionName.equals(targetFunc.getLexeme())) { 
-            writer.write("\tJMP _ERROR_RECURSION_DIRECTA\n");
-        } else {
-            // 2. LLAMADA REAL
-            writer.write(String.format("\tCALL _%s\n", targetMangledName));
+        PolacaEntry targetEntry = safeGet(polaca, entry.getAddress() - 1);
+        if (targetEntry == null || !(targetEntry.getValue() instanceof SymbolEntry)) {
+            writer.write("\t; ERROR: CALL sin funcion valida\n");
+            return;
         }
-        
+        SymbolEntry targetFunc = (SymbolEntry) targetEntry.getValue();
+        String targetMangledName = targetFunc.getMangledName() != null ? targetFunc.getMangledName().replace(":", "_") : targetFunc.getLexeme().replace(":", "_");
+
+        String currentNormalized = normalizeFuncKeyToAsm(currentFunctionName);
+        String targetNormalized = "_" + targetMangledName;
+
+        if (currentNormalized.equals(targetNormalized)) { 
+            writer.write("\tJMP _RTH_RECURSION_DIRECTA\n");
+        } else {
+            writer.write("\tCALL " + targetNormalized + "\n");
+        }
     }
 
     private void translateConversion(PolacaInversa polaca, PolacaEntry entry) throws IOException {
-        
-        PolacaEntry targetEntry = polaca.getEntryAt(entry.getAddress() - 1);
+        PolacaEntry targetEntry = safeGet(polaca, entry.getAddress() + 1);
+        PolacaEntry op1Entry = safeGet(polaca, entry.getAddress() - 1);
+
+        if (op1Entry == null || targetEntry == null) {
+            writer.write("\t; ERROR: Operandos para TOF no disponibles\n");
+            return;
+        }
+        if (!(op1Entry.getValue() instanceof SymbolEntry) || !(targetEntry.getValue() instanceof SymbolEntry)) {
+            writer.write("\t; ERROR: Operandos para TOF no son SymbolEntry\n");
+            return;
+        }
+
         SymbolEntry target = (SymbolEntry) targetEntry.getValue();
-        
-        PolacaEntry op1Entry = polaca.getEntryAt(entry.getAddress() - 2);
         SymbolEntry op1 = (SymbolEntry) op1Entry.getValue();
-        
-        String asmTarget = getAsmName(target);
-        String asmSource = getAsmName(op1);
-        
-        // FILD (Float Integer Load) carga un entero de 4 bytes a la pila FPU y lo convierte a float.
-        writer.write(String.format("\tFILD %s\n", asmSource)); 
-        // FSTP (Float Store and Pop) guarda el resultado en el destino (float) y limpia la pila FPU.
-        writer.write(String.format("\tFSTP %s\n", asmTarget)); 
+
+        writer.write("\tFILD DWORD PTR " + getAsmName(op1) + "\n");
+        writer.write("\tFSTP DWORD PTR " + getAsmName(target) + "\n");
     }
 
     private void translatePrint(PolacaInversa polaca, PolacaEntry entry) throws IOException {
-        
-        PolacaEntry op1Entry = polaca.getEntryAt(entry.getAddress() - 1);
+        PolacaEntry op1Entry = safeGet(polaca, entry.getAddress() - 1);
+        if (op1Entry == null) {
+            writer.write("\t; ERROR: PRINT sin operando\n");
+            return;
+        }
         Object op1Value = op1Entry.getValue();
-        
+
         if (op1Value instanceof SymbolEntry op1) {
             String asmName = getAsmName(op1);
-            
+
             if ("int".equals(op1.getTipo())) {
-                // Imprimir entero: pasa el valor por PUSH
-                writer.write(String.format("\tPUSH %s\n", asmName));
+                writer.write("\tPUSH " + asmName + "\n");
                 writer.write("\tCALL _print_int\n");
                 writer.write("\tADD ESP, 4\n"); 
-            } 
-            else if ("float".equals(op1.getTipo())) {
-                // Imprimir flotante: pasa la dirección por PUSH OFFSET
-                writer.write(String.format("\tPUSH OFFSET %s\n", asmName));
+            } else if ("float".equals(op1.getTipo())) {
+                writer.write("\tPUSH OFFSET " + asmName + "\n");
                 writer.write("\tCALL _print_float\n");
                 writer.write("\tADD ESP, 4\n"); 
-            } 
-            else if ("string".equals(op1.getTipo())) {
-                // Imprimir cadena: pasa la dirección por PUSH OFFSET
-                writer.write(String.format("\tPUSH OFFSET %s\n", asmName));
+            } else if ("string".equals(op1.getTipo())) {
+                writer.write("\tPUSH OFFSET " + asmName + "\n");
                 writer.write("\tCALL _print_string\n");
                 writer.write("\tADD ESP, 4\n");
+            } else {
+                writer.write("\t; WARNING: PRINT tipo no soportado: " + op1.getTipo() + "\n");
             }
-        } 
-        else {
+        } else {
             writer.write("\t; ERROR: Operando de impresión no es SymbolEntry.\n");
         }
     }
 
     private void translateComparison(PolacaInversa polaca, PolacaEntry entry, String operator) throws IOException {
-        // OP1 (pos-2) OP2 (pos-1) OPERATOR (pos) TARGET (pos+1) 
+        PolacaEntry targetEntry = safeGet(polaca, entry.getAddress() + 1);
+        PolacaEntry op2Entry = safeGet(polaca, entry.getAddress() - 1);
+        PolacaEntry op1Entry = safeGet(polaca, entry.getAddress() - 2);
 
-        PolacaEntry targetEntry = polaca.getEntryAt(entry.getAddress() + 1);
+        if (targetEntry == null || op1Entry == null || op2Entry == null) {
+            writer.write("\t; ERROR: entradas faltantes para comparacion addr " + entry.getAddress() + "\n");
+            return;
+        }
+        if (!(targetEntry.getValue() instanceof SymbolEntry) || !(op1Entry.getValue() instanceof SymbolEntry) || !(op2Entry.getValue() instanceof SymbolEntry)) {
+            writer.write("\t; ERROR: comparacion con operandos no SymbolEntry\n");
+            return;
+        }
+
         SymbolEntry target = (SymbolEntry) targetEntry.getValue();
-
-        PolacaEntry op2Entry = polaca.getEntryAt(entry.getAddress() - 1);
-        PolacaEntry op1Entry = polaca.getEntryAt(entry.getAddress() - 2);
         SymbolEntry op1 = (SymbolEntry) op1Entry.getValue();
         SymbolEntry op2 = (SymbolEntry) op2Entry.getValue();
-        
-        String asmTarget = getAsmName(target);
 
+        String asmTarget = getAsmName(target);
         String jumpInstruction;
         switch (operator) {
-            case "==": jumpInstruction = "JE"; break; // Jump Equal
-            case "!=": jumpInstruction = "JNE"; break; // Jump Not Equal
-            case ">":  jumpInstruction = "JG"; break; // Jump Greater
-            case "<":  jumpInstruction = "JL"; break; // Jump Less
-            case ">=": jumpInstruction = "JGE"; break; // Jump Greater or Equal
-            case "<=": jumpInstruction = "JLE"; break; // Jump Less or Equal
+            case "==": jumpInstruction = "JE"; break;
+            case "!=": jumpInstruction = "JNE"; break;
+            case ">":  jumpInstruction = "JG"; break;
+            case "<":  jumpInstruction = "JL"; break;
+            case ">=": jumpInstruction = "JGE"; break;
+            case "<=": jumpInstruction = "JLE"; break;
             default: jumpInstruction = "JMP"; break;
         }
-        
-        if ("int".equals(op1.getTipo())) { 
-            // Integer Comparison: CMP sets FLAGS directly
-            writer.write(String.format("\tMOV EAX, %s\n", getAsmName(op1)));
-            writer.write(String.format("\tCMP EAX, %s\n", getAsmName(op2))); 
+
+        if ("int".equals(op1.getTipo())) {
+            writer.write("\tMOV EAX, " + getAsmName(op1) + "\n");
+            writer.write("\tCMP EAX, " + getAsmName(op2) + "\n");
         } else {
-            // FPU Comparison: FCOM -> FSTSW AX -> SAHF sets FLAGS
             writer.write("\t; Comparacion flotante FPU\n");
-            writer.write(String.format("\tFLD %s\n", getAsmName(op1)));
-            writer.write(String.format("\tFCOM %s\n", getAsmName(op2))); 
-            writer.write("\tFSTSW AX\n"); 
-            writer.write("\tSAHF\n"); 
+            writer.write("\tFLD DWORD PTR " + getAsmName(op1) + "\n");
+            writer.write("\tFCOM DWORD PTR " + getAsmName(op2) + "\n");
+            writer.write("\tFSTSW AX\n");
+            writer.write("\tSAHF\n");
         }
-        
-        // 2. GUARDAR RESULTADO (0 o 1)
-        
-        writer.write(String.format("\tMOV EAX, 0\n")); 
-        writer.write(String.format("\t%s L_SET_1_%d\n", jumpInstruction, entry.getAddress())); 
-        writer.write(String.format("\tJMP L_STORE_%d\n", entry.getAddress())); 
-        
-        writer.write(String.format("L_SET_1_%d:\n", entry.getAddress())); 
-        writer.write("\tMOV EAX, 1\n"); 
-        
-        writer.write(String.format("L_STORE_%d:\n", entry.getAddress())); 
-        writer.write(String.format("\tMOV %s, EAX\n", asmTarget)); 
+
+        writer.write("\tMOV EAX, 0\n");
+        writer.write("\t" + jumpInstruction + " L_SET_1_" + entry.getAddress() + "\n");
+        writer.write("\tJMP L_STORE_" + entry.getAddress() + "\n");
+        writer.write("L_SET_1_" + entry.getAddress() + ":\n");
+        writer.write("\tMOV EAX, 1\n");
+        writer.write("L_STORE_" + entry.getAddress() + ":\n");
+        writer.write("\tMOV " + asmTarget + ", EAX\n");
     }
 
 }

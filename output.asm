@@ -15,42 +15,42 @@ extern _print_int:PROC
 
 .DATA
 ; Variables Auxiliares (DD ?) y Constantes
-A_PRUEBAINTEGRAL_LAMBDA_ANON_1 DD ?
-B_PRUEBAINTEGRAL DD ?
-RESULTADO_PRUEBAINTEGRAL DD ?
-CONTADOR_PRUEBAINTEGRAL DD ?
-FLOTANTE_PRUEBAINTEGRAL DD ?
-CTE_10I         DD 10I
-CTE_5I          DD 5I
-CTE_____INICIO_DE_PRUEBAS____ DB "-- INICIO DE PRUEBAS --", 0
-CTE_A_vale_(10)_ DB " vale (10)", 0
-@T1_PRUEBAINTEGRAL DD ?
-CTE_Correcto__A_es_mayor_que_B DB "orrecto: A es mayor que ", 0
-CTE_Error__A_no_deberia_ser_menor DB "rror: A no deberia ser meno", 0
-@T2_PRUEBAINTEGRAL DD ?
-CTE_2_5         DD 2.5
-@T3_PRUEBAINTEGRAL DD ?
-CTE_Prueba_TOF_(12_5)_ DB "rueba TOF (12.5)", 0
-CTE_For_Ascendente_(1_to_3)_ DB "or Ascendente (1 to 3)", 0
-CTE_1I          DD 1I
-CTE_3I          DD 3I
-@T4_PRUEBAINTEGRAL DD ?
-@T5_PRUEBAINTEGRAL DD ?
-CTE_For_Descendente_(3_to_1)_ DB "or Descendente (3 to 1)", 0
-@T6_PRUEBAINTEGRAL DD ?
-@T7_PRUEBAINTEGRAL DD ?
-CTE_Asignacion_Multiple_A,B_=_1,2_ DB "signacion Multiple A,B = 1,2", 0
-CTE_Prueba_Lambda_(Imprime_100)_ DB "rueba Lambda (Imprime 100)", 0
-A_PRUEBAINTEGRAL_LAMBDA_ANON_1 DD ?
-CTE_5I          DD 5I
-@T8_PRUEBAINTEGRAL_LAMBDA_ANON_1 DD ?
-CTE_A_es_mayor  DB " es mayo", 0
-CTE_____FIN_DE_PRUEBAS____ DB "-- FIN DE PRUEBAS --", 0
+_PRUEBAINTEGRAL_PRUEBAINTEGRAL           DD ? ; (uso=programa tipo=null)
+_A_PRUEBAINTEGRAL_LAMBDA_ANON_1          DD ?
+_B_PRUEBAINTEGRAL                        DD ?
+_RESULTADO_PRUEBAINTEGRAL                DD ?
+_CONTADOR_PRUEBAINTEGRAL                 DD ?
+_FLOTANTE_PRUEBAINTEGRAL                 DD ?
+_CTE_10I                                 DD 10
+_CTE_5I                                  DD 5
+_CTE_____INICIO_DE_PRUEBAS____           DB "--- INICIO DE PRUEBAS ---", 0
+_CTE_A_vale__10__                        DB "A vale (10):", 0
+_@T1_PRUEBAINTEGRAL                      DD ?
+_CTE_Correcto__A_es_mayor_que_B          DB "Correcto: A es mayor que B", 0
+_CTE_Error__A_no_deberia_ser_menor       DB "Error: A no deberia ser menor", 0
+_@T2_PRUEBAINTEGRAL                      DD ?
+_CTE_2_5                                 DD 2.5
+_@T3_PRUEBAINTEGRAL                      DD ?
+_CTE_Prueba_TOF__12_5__                  DB "Prueba TOF (12.5):", 0
+_CTE_For_Ascendente__1_to_3__            DB "For Ascendente (1 to 3):", 0
+_CTE_1I                                  DD 1
+_CTE_3I                                  DD 3
+_@T4_PRUEBAINTEGRAL                      DD ?
+_@T5_PRUEBAINTEGRAL                      DD ?
+_CTE_For_Descendente__3_to_1__           DB "For Descendente (3 to 1):", 0
+_@T6_PRUEBAINTEGRAL                      DD ?
+_@T7_PRUEBAINTEGRAL                      DD ?
+_CTE_Asignacion_Multiple_A_B_=_1_2_      DB "Asignacion Multiple A,B = 1,2:", 0
+_CTE_Prueba_Lambda__Imprime_100__        DB "Prueba Lambda (Imprime 100):", 0
+_@T8_PRUEBAINTEGRAL_LAMBDA_ANON_1        DD ?
+_CTE_A_es_mayor                          DB "A es mayor", 0
+_CTE_____FIN_DE_PRUEBAS____              DB "--- FIN DE PRUEBAS ---", 0
+_CTE_1                                   DD 1
 
 ; Rutinas de error de Runtime
-_DIV_CERO       DB "Error en runtime: Division por cero!", 0
-_OVERFLOW_FLOAT DB "Error en runtime: Overflow de flotante!", 0
-_RECURSION_ERR  DB "Error en runtime: Recursion directa prohibida!", 0
+_DIV_CERO                                DB "Error en runtime: Division por cero!", 0
+_OVERFLOW_FLOAT                          DB "Error en runtime: Overflow de flotante!", 0
+_RECURSION_ERR                           DB "Error en runtime: Recursion directa prohibida!", 0
 
 .CODE
 _RTH_DIV_CERO:
@@ -74,20 +74,44 @@ _PRUEBAINTEGRAL_PRUEBAINTEGRAL PROC
 	MOV EBP, ESP
 
 	; --- Traduccion Polaca Inversa (PRUEBAINTEGRAL:PRUEBAINTEGRAL) --- 
-L_1:	L_2:	L_3:		MOV EAX, _CTE_10I
+L_1:
+	; OPERANDO OMITIDO
+L_2:
+	; OPERANDO OMITIDO
+L_3:
+	MOV EAX, _CTE_10I
 	MOV _A_PRUEBAINTEGRAL_LAMBDA_ANON_1, EAX
-L_4:	L_5:	L_6:		MOV EAX, _CTE_5I
+L_4:
+	; OPERANDO OMITIDO
+L_5:
+	; OPERANDO OMITIDO
+L_6:
+	MOV EAX, _CTE_5I
 	MOV _B_PRUEBAINTEGRAL, EAX
-L_7:	L_8:		PUSH OFFSET _CTE_____INICIO_DE_PRUEBAS____
+L_7:
+	; OPERANDO OMITIDO
+L_8:
+	PUSH OFFSET _CTE_____INICIO_DE_PRUEBAS____
 	CALL _print_string
 	ADD ESP, 4
-L_9:	L_10:		PUSH OFFSET _CTE_A_vale_(10)_
+L_9:
+	; OPERANDO OMITIDO
+L_10:
+	PUSH OFFSET _CTE_A_vale__10__
 	CALL _print_string
 	ADD ESP, 4
-L_11:	L_12:		PUSH _A_PRUEBAINTEGRAL_LAMBDA_ANON_1
+L_11:
+	; OPERANDO OMITIDO
+L_12:
+	PUSH _A_PRUEBAINTEGRAL_LAMBDA_ANON_1
 	CALL _print_int
 	ADD ESP, 4
-L_13:	L_14:	L_15:		MOV EAX, _A_PRUEBAINTEGRAL_LAMBDA_ANON_1
+L_13:
+	; OPERANDO OMITIDO
+L_14:
+	; OPERANDO OMITIDO
+L_15:
+	MOV EAX, _A_PRUEBAINTEGRAL_LAMBDA_ANON_1
 	CMP EAX, _B_PRUEBAINTEGRAL
 	MOV EAX, 0
 	JG L_SET_1_15
@@ -96,10 +120,295 @@ L_SET_1_15:
 	MOV EAX, 1
 L_STORE_15:
 	MOV _@T1_PRUEBAINTEGRAL, EAX
-L_16:	L_17:		; ASIGNACION REDUNDANTE OMITIDA (Operando no es SymbolEntry)
-L_18:	L_19:		; Salto si Falso (BF) a L_23
+L_16:
+	; OPERANDO OMITIDO
+L_17:
+	; ASIGNACION REDUNDANTE OMITIDA (Operando no es SymbolEntry)
+L_18:
+	; OPERANDO OMITIDO
+L_19:
+	; Salto si Falso (BF) a L_23
 	MOV EAX, _@T1_PRUEBAINTEGRAL
 	CMP EAX, 0
 	JE L_23
-L_20:	L_21:		PUSH OFFSET _CTE_Correcto__A_es_mayor_que_B
-	C
+L_20:
+	; OPERANDO OMITIDO
+L_21:
+	PUSH OFFSET _CTE_Correcto__A_es_mayor_que_B
+	CALL _print_string
+	ADD ESP, 4
+L_22:
+	; Salto incondicional (BI) a L_25
+	JMP L_25
+L_23:
+	; OPERANDO OMITIDO
+L_24:
+	PUSH OFFSET _CTE_Error__A_no_deberia_ser_menor
+	CALL _print_string
+	ADD ESP, 4
+L_25:
+	; OPERANDO OMITIDO
+L_26:
+	FILD DWORD PTR _A_PRUEBAINTEGRAL_LAMBDA_ANON_1
+	FSTP DWORD PTR _@T2_PRUEBAINTEGRAL
+L_27:
+	; OPERANDO OMITIDO
+L_28:
+	; ASIGNACION REDUNDANTE OMITIDA (Operando no es SymbolEntry)
+L_29:
+	; OPERANDO OMITIDO
+L_30:
+	; OPERANDO OMITIDO
+L_31:
+	FLD DWORD PTR _@T2_PRUEBAINTEGRAL
+	FLD DWORD PTR _CTE_2_5
+	FADD
+	; Chequeo de Overflow/Underflow Flotante
+	FWAIT
+	FNSTSW AX
+	TEST AH, 0004h
+	JNE _RTH_OVERFLOW_FLOAT
+	FSTP DWORD PTR _@T3_PRUEBAINTEGRAL
+L_32:
+	; OPERANDO OMITIDO
+L_33:
+	; ASIGNACION REDUNDANTE OMITIDA (Operando no es SymbolEntry)
+L_34:
+	; OPERANDO OMITIDO
+L_35:
+	; OPERANDO OMITIDO
+L_36:
+	FLD DWORD PTR _@T3_PRUEBAINTEGRAL
+	FSTP DWORD PTR _FLOTANTE_PRUEBAINTEGRAL
+L_37:
+	; OPERANDO OMITIDO
+L_38:
+	PUSH OFFSET _CTE_Prueba_TOF__12_5__
+	CALL _print_string
+	ADD ESP, 4
+L_39:
+	; OPERANDO OMITIDO
+L_40:
+	PUSH OFFSET _FLOTANTE_PRUEBAINTEGRAL
+	CALL _print_float
+	ADD ESP, 4
+L_41:
+	; OPERANDO OMITIDO
+L_42:
+	PUSH OFFSET _CTE_For_Ascendente__1_to_3__
+	CALL _print_string
+	ADD ESP, 4
+L_43:
+	; OPERANDO OMITIDO
+L_44:
+	; OPERANDO OMITIDO
+L_45:
+	MOV EAX, _CTE_1I
+	MOV _CONTADOR_PRUEBAINTEGRAL, EAX
+L_46:
+	; OPERANDO OMITIDO
+L_47:
+	; OPERANDO OMITIDO
+L_48:
+	MOV EAX, _CONTADOR_PRUEBAINTEGRAL
+	CMP EAX, _CTE_3I
+	MOV EAX, 0
+	JLE L_SET_1_48
+	JMP L_STORE_48
+L_SET_1_48:
+	MOV EAX, 1
+L_STORE_48:
+	MOV _@T4_PRUEBAINTEGRAL, EAX
+L_49:
+	; OPERANDO OMITIDO
+L_50:
+	; ASIGNACION REDUNDANTE OMITIDA (Operando no es SymbolEntry)
+L_51:
+	; OPERANDO OMITIDO
+L_52:
+	; Salto si Falso (BF) a L_64
+	MOV EAX, _@T4_PRUEBAINTEGRAL
+	CMP EAX, 0
+	JE L_64
+L_53:
+	; OPERANDO OMITIDO
+L_54:
+	PUSH _CONTADOR_PRUEBAINTEGRAL
+	CALL _print_int
+	ADD ESP, 4
+L_55:
+	; OPERANDO OMITIDO
+L_56:
+	; OPERANDO OMITIDO
+L_57:
+	MOV EAX, _CONTADOR_PRUEBAINTEGRAL
+	ADD EAX, _CTE_1
+	MOV _@T5_PRUEBAINTEGRAL, EAX
+L_58:
+	; OPERANDO OMITIDO
+L_59:
+	; ASIGNACION REDUNDANTE OMITIDA (Operando no es SymbolEntry)
+L_60:
+	; OPERANDO OMITIDO
+L_61:
+	; OPERANDO OMITIDO
+L_62:
+	MOV EAX, _@T5_PRUEBAINTEGRAL
+	MOV _CONTADOR_PRUEBAINTEGRAL, EAX
+L_63:
+	; Salto incondicional (BI) a L_46
+	JMP L_46
+L_64:
+	; OPERANDO OMITIDO
+L_65:
+	PUSH OFFSET _CTE_For_Descendente__3_to_1__
+	CALL _print_string
+	ADD ESP, 4
+L_66:
+	; OPERANDO OMITIDO
+L_67:
+	; OPERANDO OMITIDO
+L_68:
+	MOV EAX, _CTE_3I
+	MOV _CONTADOR_PRUEBAINTEGRAL, EAX
+L_69:
+	; OPERANDO OMITIDO
+L_70:
+	; OPERANDO OMITIDO
+L_71:
+	MOV EAX, _CONTADOR_PRUEBAINTEGRAL
+	CMP EAX, _CTE_1I
+	MOV EAX, 0
+	JLE L_SET_1_71
+	JMP L_STORE_71
+L_SET_1_71:
+	MOV EAX, 1
+L_STORE_71:
+	MOV _@T6_PRUEBAINTEGRAL, EAX
+L_72:
+	; OPERANDO OMITIDO
+L_73:
+	; ASIGNACION REDUNDANTE OMITIDA (Operando no es SymbolEntry)
+L_74:
+	; OPERANDO OMITIDO
+L_75:
+	; Salto si Falso (BF) a L_87
+	MOV EAX, _@T6_PRUEBAINTEGRAL
+	CMP EAX, 0
+	JE L_87
+L_76:
+	; OPERANDO OMITIDO
+L_77:
+	PUSH _CONTADOR_PRUEBAINTEGRAL
+	CALL _print_int
+	ADD ESP, 4
+L_78:
+	; OPERANDO OMITIDO
+L_79:
+	; OPERANDO OMITIDO
+L_80:
+	MOV EAX, _CONTADOR_PRUEBAINTEGRAL
+	ADD EAX, _CTE_1
+	MOV _@T7_PRUEBAINTEGRAL, EAX
+L_81:
+	; OPERANDO OMITIDO
+L_82:
+	; ASIGNACION REDUNDANTE OMITIDA (Operando no es SymbolEntry)
+L_83:
+	; OPERANDO OMITIDO
+L_84:
+	; OPERANDO OMITIDO
+L_85:
+	MOV EAX, _@T7_PRUEBAINTEGRAL
+	MOV _CONTADOR_PRUEBAINTEGRAL, EAX
+L_86:
+	; Salto incondicional (BI) a L_69
+	JMP L_69
+L_87:
+	; OPERANDO OMITIDO
+L_88:
+	PUSH OFFSET _CTE_Asignacion_Multiple_A_B_=_1_2_
+	CALL _print_string
+	ADD ESP, 4
+L_89:
+	; OPERANDO OMITIDO
+L_90:
+	; OPERANDO OMITIDO
+L_91:
+	MOV EAX, _CTE_1I
+	MOV _A_PRUEBAINTEGRAL_LAMBDA_ANON_1, EAX
+L_92:
+	; OPERANDO OMITIDO
+L_93:
+	PUSH _A_PRUEBAINTEGRAL_LAMBDA_ANON_1
+	CALL _print_int
+	ADD ESP, 4
+L_94:
+	; OPERANDO OMITIDO
+L_95:
+	PUSH _B_PRUEBAINTEGRAL
+	CALL _print_int
+	ADD ESP, 4
+L_96:
+	; OPERANDO OMITIDO
+L_97:
+	PUSH OFFSET _CTE_Prueba_Lambda__Imprime_100__
+	CALL _print_string
+	ADD ESP, 4
+L_98:
+	; OPERANDO OMITIDO
+L_99:
+	; OPERANDO OMITIDO
+L_100:
+	MOV EAX, _CTE_10I
+	MOV _A_PRUEBAINTEGRAL_LAMBDA_ANON_1, EAX
+L_101:
+	; OPERANDO OMITIDO
+L_102:
+	; OPERANDO OMITIDO
+L_103:
+	MOV EAX, _A_PRUEBAINTEGRAL_LAMBDA_ANON_1
+	CMP EAX, _CTE_5I
+	MOV EAX, 0
+	JG L_SET_1_103
+	JMP L_STORE_103
+L_SET_1_103:
+	MOV EAX, 1
+L_STORE_103:
+	MOV _@T8_PRUEBAINTEGRAL_LAMBDA_ANON_1, EAX
+L_104:
+	; OPERANDO OMITIDO
+L_105:
+	; ASIGNACION REDUNDANTE OMITIDA (Operando no es SymbolEntry)
+L_106:
+	; OPERANDO OMITIDO
+L_107:
+	; Salto si Falso (BF) a L_110
+	MOV EAX, _@T8_PRUEBAINTEGRAL_LAMBDA_ANON_1
+	CMP EAX, 0
+	JE L_110
+L_108:
+	; OPERANDO OMITIDO
+L_109:
+	PUSH OFFSET _CTE_A_es_mayor
+	CALL _print_string
+	ADD ESP, 4
+L_110:
+	; OPERANDO OMITIDO
+L_111:
+	PUSH OFFSET _CTE_____FIN_DE_PRUEBAS____
+	CALL _print_string
+	ADD ESP, 4
+
+	; --- Fin Traduccion Polaca Inversa --- 
+_PRUEBAINTEGRAL_PRUEBAINTEGRAL_EPILOGUE:
+	MOV ESP, EBP
+	POP EBP
+	RET
+_PRUEBAINTEGRAL_PRUEBAINTEGRAL ENDP
+
+start:
+	; NO SE ENCONTRO MAIN - start vacio
+_EXIT_PROGRAM:
+	INVOKE ExitProcess, 0
+END start
