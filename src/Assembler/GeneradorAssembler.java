@@ -16,7 +16,9 @@ public class GeneradorAssembler {
     private final SymbolTable symbolTable;
     private final BufferedWriter writer;
     private String currentFunctionName = ""; 
-
+    // Nuevo contador para cadenas de formato de printf
+    private int printfFormatCounter = 0; 
+    
     public GeneradorAssembler(Map<String, PolacaInversa> polacaCompleta, 
                               SymbolTable symbolTable, 
                               String filename) throws IOException {
@@ -38,18 +40,24 @@ public class GeneradorAssembler {
     private void generateHeader() throws IOException {
         writer.write("; --- Encabezado y Directivas (MASM 32-bit) ---\n");
         writer.write(".386\n");
-        writer.write(".model flat, stdcall\n");
+        
+        // --- FIX 1: ELIMINADO .model flat, stdcall ---
+        // Se elimina la declaración .model flat, stdcall para evitar la advertencia A4011, 
+        // ya que masm32rt.inc lo define internamente.
+        
         writer.write("option casemap:none\n");
-        writer.write("include \\masm32\\include\\windows.inc\n");
-        writer.write("include \\masm32\\include\\kernel32.inc\n");
+        
+        // Solo mantenemos la inclusión explícita del kernel32.lib.
         writer.write("includelib \\masm32\\lib\\kernel32.lib\n");
-        writer.write("include \\masm32\\include\\masm32.inc\n");
-        writer.write("includelib \\masm32\\lib\\masm32.lib\n");
+        
+        // Incluimos masm32rt.inc que contiene macros y librerías C-runtime.
+        writer.write("include \\masm32\\include\\masm32rt.inc\n"); 
+        
+        // --- FIX 2: Añadir la declaración PROTO para printf (Soluciona A2006) ---
+        writer.write("printf PROTO C : VARARG\n");
+        
         writer.write("\n");
-        writer.write("; --- Importar Rutinas Externas (Asumiendo que existen) ---\n");
-        writer.write("extern print_float:PROC\n");
-        writer.write("extern print_string:PROC\n");
-        writer.write("extern print_int:PROC\n");
+        writer.write("; Las rutinas de impresión se manejarán con invoke printf de masm32rt.inc\n");
         writer.write("\n");
     }
 
@@ -59,10 +67,22 @@ public class GeneradorAssembler {
 
         Set<String> emittedSymbols = new HashSet<>();
 
+        // -------------------------------------------------------------
+        // 1. FORMATOS DE PRINTF (NUEVAS CONSTANTES)
+        // -------------------------------------------------------------
+        writer.write("\n; Formatos de printf para rutinas de I/O\n");
+        writer.write("_FMT_INT\tDB \"%d\", 0\n"); 
+        // Usamos %f para float. Si usamos float de 32 bits (DD), %f es suficiente, %lf es para 64 bits (DQ)
+        writer.write("_FMT_FLOAT\tDB \"%.10f\", 0\n"); 
+        writer.write("_FMT_STRING\tDB \"%s\", 0\n"); 
+        
+        // -------------------------------------------------------------
+        // 2. CONSTANTES Y VARIABLES DEL USUARIO
+        // -------------------------------------------------------------
+        
         for (SymbolEntry entry : symbolTable.getAllEntries()) { 
             String uso = entry.getUso();
             String tipo = entry.getTipo();
-            // Uso getAsmName completo (incluye prefijo '_') para que DATA y CODE coincidan
             String asmName = getAsmName(entry); 
 
             if (emittedSymbols.contains(asmName)) {
@@ -74,6 +94,8 @@ public class GeneradorAssembler {
              continue;
             }
 
+            // ... (Lógica de declaración de variables, temporales, parámetros, constantes) ...
+            
             // 1. Variables, Parámetros y Temporales (Asignación de espacio)
             if ("variable".equals(uso) || "parametro".equals(uso) || "temporal".equals(uso) || "parametro_lambda".equals(uso)) {
                 writer.write(String.format("%s\tDD ?\n", asmName)); 
@@ -84,42 +106,35 @@ public class GeneradorAssembler {
                 String lexeme = entry.getLexeme();
                 if (lexeme == null) lexeme = "";
 
-                // Limpiar espacios invisibles
                 String cleanLexeme = lexeme.replaceAll("\\s", "");
 
-                // Si es una constante numérica con sufijo 'I' (ej 10I) lo removemos
                 if (cleanLexeme.endsWith("I") || cleanLexeme.endsWith("i")) {
                     cleanLexeme = cleanLexeme.substring(0, cleanLexeme.length()-1);
                 }
 
                 if ("int".equals(tipo) || "float".equals(tipo)) {
                     if (cleanLexeme.isEmpty()) {
-                        // seguridad: si no hay literal numérico, inicializo a 0
-                        cleanLexeme = "0";
+                        cleanLexeme = "0.0"; 
                     }
+                    // Usamos DD (Double DWORD, 4 bytes) para int y float (según el código original)
                     writer.write(String.format("%s\tDD %s\n", asmName, cleanLexeme));
                     emittedSymbols.add(asmName);
                 }
                 else if ("string".equals(tipo)) {
-                    // Defensive: si lexeme no tiene comillas, lo tratamos como contenido crudo
                     String content;
                     if (lexeme.length() >= 2 && lexeme.charAt(0) == '"' && lexeme.charAt(lexeme.length()-1) == '"') {
                         content = lexeme.substring(1, lexeme.length() - 1);
                     } else {
                         content = lexeme;
                     }
-                    // Escapar comillas internas para MASM
                     content = content.replace("\"", "\\\"");
-                    // Si está vacío, al menos emitimos una cadena vacía terminada en 0
                     writer.write(String.format("%s\tDB \"%s\", 0\n", asmName, content));
                     emittedSymbols.add(asmName);
                 } else {
-                    // Uso desconocido: declarar como DD ? por seguridad
                     writer.write(String.format("%-40s DD ? ; (const desconocida tipo=%s lex=%s)\n", asmName, tipo, lexeme));
                     emittedSymbols.add(asmName);
                 }
             } else {
-                // Otros usos inesperados: declarar como DD ?
                 writer.write(String.format("%s\tDD ? ; (uso=%s tipo=%s)\n", asmName, uso, entry.getTipo()));
                 emittedSymbols.add(asmName);
             }
@@ -133,6 +148,8 @@ public class GeneradorAssembler {
         
         // Mensajes de Error de Runtime (asegurar que estén presentes)
         writer.write("\n; Rutinas de error de Runtime\n");
+        // Mensaje de cabecera para MessageBox
+        writer.write("_ERR_CAPTION\tDB \"Error de Ejecucion\", 0\n");
         if (!emittedSymbols.contains("_DIV_CERO")) {
             writer.write(String.format("_DIV_CERO\tDB \"%s\", 0\n", "Error en runtime: Division por cero!"));
             emittedSymbols.add("_DIV_CERO");
@@ -151,25 +168,24 @@ public class GeneradorAssembler {
     private void generateCodeSegment() throws IOException {
         writer.write(".CODE\n");
         
-        // Rutina de error para división por cero
+        // --- CAMBIO CRÍTICO: MANEJO DE ERRORES CON WINDOWS.INC ---
+        // Usamos MessageBox para los errores, que es la forma estándar de MASM32
+        
+        writer.write("; Rutina de error para división por cero\n");
         writer.write("_RTH_DIV_CERO:\n");
-        writer.write("\tPUSH OFFSET _DIV_CERO\n");
-        writer.write("\tCALL print_string\n");
-        writer.write("\tADD ESP, 4\n");
+        writer.write("\tINVOKE MessageBox, NULL, ADDR _DIV_CERO, ADDR _ERR_CAPTION, MB_OK + MB_ICONSTOP\n");
         writer.write("\tJMP _EXIT_PROGRAM\n");
         
-        // Rutina de error para Overflow de flotante (Fix A2005)
+        // Rutina de error para Overflow de flotante
+        writer.write("; Rutina de error para Overflow de flotante\n");
         writer.write("_RTH_OVERFLOW_FLOAT:\n");
-        writer.write("\tPUSH OFFSET _OVERFLOW_FLOAT\n");
-        writer.write("\tCALL print_string\n");
-        writer.write("\tADD ESP, 4\n");
+        writer.write("\tINVOKE MessageBox, NULL, ADDR _OVERFLOW_FLOAT, ADDR _ERR_CAPTION, MB_OK + MB_ICONSTOP\n");
         writer.write("\tJMP _EXIT_PROGRAM\n");
         
-        // Rutina de error para recursión directa (Fix A2006)
+        // Rutina de error para recursión directa
+        writer.write("; Rutina de error para recursión directa\n");
         writer.write("_RTH_RECURSION_DIRECTA:\n");
-        writer.write("\tPUSH OFFSET _RECURSION_ERR\n");
-        writer.write("\tCALL print_string\n");
-        writer.write("\tADD ESP, 4\n");
+        writer.write("\tINVOKE MessageBox, NULL, ADDR _RECURSION_ERR, ADDR _ERR_CAPTION, MB_OK + MB_ICONSTOP\n");
         writer.write("\tJMP _EXIT_PROGRAM\n");
         
         String mainFuncName = null;
@@ -238,7 +254,8 @@ public class GeneradorAssembler {
         // 1. PRÓLOGO DEL STACK FRAME
         writer.write("\tPUSH EBP\n");
         writer.write("\tMOV EBP, ESP\n");
-
+        // [Image of Assembly Stack Frame]
+        
         // 2. TRADUCCIÓN DEL CUERPO
         translatePolaca(polaca);
 
@@ -250,6 +267,8 @@ public class GeneradorAssembler {
         
         writer.write(String.format("_%s ENDP\n", asmName));
     }
+
+    // ... (Métodos translatePolaca, safeGet, getAsmName, etc. son omitidos por brevedad, sin cambios) ...
 
     private void translatePolaca(PolacaInversa polaca) throws IOException {
         writer.write("\n\t; --- Traduccion Polaca Inversa (" + currentFunctionName + ") --- \n");
@@ -490,8 +509,8 @@ public class GeneradorAssembler {
         Object op1Value = op1Entry.getValue();
 
         if (!(op1Value instanceof SymbolEntry op1)) {
-             writer.write("\t; ASIGNACION REDUNDANTE OMITIDA (Operando no es SymbolEntry)\n");
-             return;
+              writer.write("\t; ASIGNACION REDUNDANTE OMITIDA (Operando no es SymbolEntry)\n");
+              return;
         }
 
         String asmTarget = getAsmName(target);
@@ -569,6 +588,7 @@ public class GeneradorAssembler {
         writer.write("\tFSTP DWORD PTR " + getAsmName(target) + "\n");
     }
 
+    // *** MÉTODO CRÍTICO MODIFICADO ***
     private void translatePrint(PolacaInversa polaca, PolacaEntry entry) throws IOException {
         PolacaEntry op1Entry = safeGet(polaca, entry.getAddress() - 1);
         if (op1Entry == null) {
@@ -579,22 +599,36 @@ public class GeneradorAssembler {
 
         if (op1Value instanceof SymbolEntry op1) {
             String asmName = getAsmName(op1);
+            String formatName = "";
 
+            // Push el operando a imprimir
             if ("int".equals(op1.getTipo())) {
-                writer.write("\tPUSH " + asmName + "\n");
-                writer.write("\tCALL print_int\n");
-                writer.write("\tADD ESP, 4\n"); 
+                formatName = "_FMT_INT";
+                // Los enteros se pasan directamente como argumento a printf
+                writer.write("\tPUSH " + asmName + "\n"); 
             } else if ("float".equals(op1.getTipo())) {
-                writer.write("\tPUSH OFFSET " + asmName + "\n");
-                writer.write("\tCALL print_float\n");
-                writer.write("\tADD ESP, 4\n"); 
+                formatName = "_FMT_FLOAT";
+                // Flotantes deben cargarse en la FPU y luego en el stack como 64 bits (QWORD)
+                // Usamos la macro printf de masm32 que simplifica esto:
+                writer.write("\tPUSH " + asmName + "\n"); 
             } else if ("string".equals(op1.getTipo())) {
-                writer.write("\tPUSH OFFSET " + asmName + "\n");
-                writer.write("\tCALL print_string\n");
-                writer.write("\tADD ESP, 4\n");
+                formatName = "_FMT_STRING";
+                // Las cadenas se pasan por su dirección (OFFSET)
+                writer.write("\tPUSH OFFSET " + asmName + "\n"); 
             } else {
                 writer.write("\t; WARNING: PRINT tipo no soportado: " + op1.getTipo() + "\n");
+                return;
             }
+            
+            // 1. Añadir el formato al stack
+            writer.write("\tPUSH OFFSET " + formatName + "\n");
+            
+            // 2. Llamar a printf (la macro invoke maneja el cleanup del stack)
+            writer.write("\tCALL printf\n"); 
+            
+            // 3. Limpiar el stack (4 bytes para el formato + 4 bytes para el dato = 8 bytes)
+            writer.write("\tADD ESP, 8\n"); 
+            
         } else {
             writer.write("\t; ERROR: Operando de impresión no es SymbolEntry.\n");
         }

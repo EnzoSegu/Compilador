@@ -1,20 +1,19 @@
 ; --- Encabezado y Directivas (MASM 32-bit) ---
 .386
-.model flat, stdcall
 option casemap:none
-include \masm32\include\windows.inc
-include \masm32\include\kernel32.inc
 includelib \masm32\lib\kernel32.lib
-include \masm32\include\masm32.inc
-includelib \masm32\lib\masm32.lib
+include \masm32\include\masm32rt.inc
+printf PROTO C : VARARG
 
-; --- Importar Rutinas Externas (Asumiendo que existen) ---
-extern _print_float:PROC
-extern _print_string:PROC
-extern _print_int:PROC
+; Las rutinas de impresión se manejarán con invoke printf de masm32rt.inc
 
 .DATA
 ; Variables Auxiliares (DD ?) y Constantes
+
+; Formatos de printf para rutinas de I/O
+_FMT_INT	DB "%d", 0
+_FMT_FLOAT	DB "%.10f", 0
+_FMT_STRING	DB "%s", 0
 _A_PRUEBAINTEGRAL_LAMBDA_ANON_1	DD ?
 _B_PRUEBAINTEGRAL	DD ?
 _RESULTADO_PRUEBAINTEGRAL	DD ?
@@ -47,25 +46,23 @@ _CTE_____FIN_DE_PRUEBAS____	DB "--- FIN DE PRUEBAS ---", 0
 _CTE_1	DD 1
 
 ; Rutinas de error de Runtime
+_ERR_CAPTION	DB "Error de Ejecucion", 0
 _DIV_CERO	DB "Error en runtime: Division por cero!", 0
 _OVERFLOW_FLOAT	DB "Error en runtime: Overflow de flotante!", 0
 _RECURSION_ERR	DB "Error en runtime: Recursion directa prohibida!", 0
 
 .CODE
+; Rutina de error para división por cero
 _RTH_DIV_CERO:
-	PUSH OFFSET _DIV_CERO
-	CALL _print_string
-	ADD ESP, 4
+	INVOKE MessageBox, NULL, ADDR _DIV_CERO, ADDR _ERR_CAPTION, MB_OK + MB_ICONSTOP
 	JMP _EXIT_PROGRAM
+; Rutina de error para Overflow de flotante
 _RTH_OVERFLOW_FLOAT:
-	PUSH OFFSET _OVERFLOW_FLOAT
-	CALL _print_string
-	ADD ESP, 4
+	INVOKE MessageBox, NULL, ADDR _OVERFLOW_FLOAT, ADDR _ERR_CAPTION, MB_OK + MB_ICONSTOP
 	JMP _EXIT_PROGRAM
+; Rutina de error para recursión directa
 _RTH_RECURSION_DIRECTA:
-	PUSH OFFSET _RECURSION_ERR
-	CALL _print_string
-	ADD ESP, 4
+	INVOKE MessageBox, NULL, ADDR _RECURSION_ERR, ADDR _ERR_CAPTION, MB_OK + MB_ICONSTOP
 	JMP _EXIT_PROGRAM
 
 start:
@@ -96,20 +93,23 @@ L_7:
 	; OPERANDO OMITIDO
 L_8:
 	PUSH OFFSET _CTE_____INICIO_DE_PRUEBAS____
-	CALL _print_string
-	ADD ESP, 4
+	PUSH OFFSET _FMT_STRING
+	CALL printf
+	ADD ESP, 8
 L_9:
 	; OPERANDO OMITIDO
 L_10:
 	PUSH OFFSET _CTE_A_vale__10__
-	CALL _print_string
-	ADD ESP, 4
+	PUSH OFFSET _FMT_STRING
+	CALL printf
+	ADD ESP, 8
 L_11:
 	; OPERANDO OMITIDO
 L_12:
 	PUSH _A_PRUEBAINTEGRAL_LAMBDA_ANON_1
-	CALL _print_int
-	ADD ESP, 4
+	PUSH OFFSET _FMT_INT
+	CALL printf
+	ADD ESP, 8
 L_13:
 	; OPERANDO OMITIDO
 L_14:
@@ -139,8 +139,9 @@ L_20:
 	; OPERANDO OMITIDO
 L_21:
 	PUSH OFFSET _CTE_Correcto__A_es_mayor_que_B
-	CALL _print_string
-	ADD ESP, 4
+	PUSH OFFSET _FMT_STRING
+	CALL printf
+	ADD ESP, 8
 L_22:
 	; Salto incondicional (BI) a L_25
 	JMP L_25
@@ -148,8 +149,9 @@ L_23:
 	; OPERANDO OMITIDO
 L_24:
 	PUSH OFFSET _CTE_Error__A_no_deberia_ser_menor
-	CALL _print_string
-	ADD ESP, 4
+	PUSH OFFSET _FMT_STRING
+	CALL printf
+	ADD ESP, 8
 L_25:
 	; OPERANDO OMITIDO
 L_26:
@@ -188,20 +190,23 @@ L_37:
 	; OPERANDO OMITIDO
 L_38:
 	PUSH OFFSET _CTE_Prueba_TOF__12_5__
-	CALL _print_string
-	ADD ESP, 4
+	PUSH OFFSET _FMT_STRING
+	CALL printf
+	ADD ESP, 8
 L_39:
 	; OPERANDO OMITIDO
 L_40:
-	PUSH OFFSET _FLOTANTE_PRUEBAINTEGRAL
-	CALL _print_float
-	ADD ESP, 4
+	PUSH _FLOTANTE_PRUEBAINTEGRAL
+	PUSH OFFSET _FMT_FLOAT
+	CALL printf
+	ADD ESP, 8
 L_41:
 	; OPERANDO OMITIDO
 L_42:
 	PUSH OFFSET _CTE_For_Ascendente__1_to_3__
-	CALL _print_string
-	ADD ESP, 4
+	PUSH OFFSET _FMT_STRING
+	CALL printf
+	ADD ESP, 8
 L_43:
 	; OPERANDO OMITIDO
 L_44:
@@ -238,8 +243,9 @@ L_53:
 	; OPERANDO OMITIDO
 L_54:
 	PUSH _CONTADOR_PRUEBAINTEGRAL
-	CALL _print_int
-	ADD ESP, 4
+	PUSH OFFSET _FMT_INT
+	CALL printf
+	ADD ESP, 8
 L_55:
 	; OPERANDO OMITIDO
 L_56:
@@ -266,8 +272,9 @@ L_64:
 	; OPERANDO OMITIDO
 L_65:
 	PUSH OFFSET _CTE_For_Descendente__3_to_1__
-	CALL _print_string
-	ADD ESP, 4
+	PUSH OFFSET _FMT_STRING
+	CALL printf
+	ADD ESP, 8
 L_66:
 	; OPERANDO OMITIDO
 L_67:
@@ -304,8 +311,9 @@ L_76:
 	; OPERANDO OMITIDO
 L_77:
 	PUSH _CONTADOR_PRUEBAINTEGRAL
-	CALL _print_int
-	ADD ESP, 4
+	PUSH OFFSET _FMT_INT
+	CALL printf
+	ADD ESP, 8
 L_78:
 	; OPERANDO OMITIDO
 L_79:
@@ -332,8 +340,9 @@ L_87:
 	; OPERANDO OMITIDO
 L_88:
 	PUSH OFFSET _CTE_Asignacion_Multiple_A_B___1_2_
-	CALL _print_string
-	ADD ESP, 4
+	PUSH OFFSET _FMT_STRING
+	CALL printf
+	ADD ESP, 8
 L_89:
 	; OPERANDO OMITIDO
 L_90:
@@ -345,20 +354,23 @@ L_92:
 	; OPERANDO OMITIDO
 L_93:
 	PUSH _A_PRUEBAINTEGRAL_LAMBDA_ANON_1
-	CALL _print_int
-	ADD ESP, 4
+	PUSH OFFSET _FMT_INT
+	CALL printf
+	ADD ESP, 8
 L_94:
 	; OPERANDO OMITIDO
 L_95:
 	PUSH _B_PRUEBAINTEGRAL
-	CALL _print_int
-	ADD ESP, 4
+	PUSH OFFSET _FMT_INT
+	CALL printf
+	ADD ESP, 8
 L_96:
 	; OPERANDO OMITIDO
 L_97:
 	PUSH OFFSET _CTE_Prueba_Lambda__Imprime_100__
-	CALL _print_string
-	ADD ESP, 4
+	PUSH OFFSET _FMT_STRING
+	CALL printf
+	ADD ESP, 8
 L_98:
 	; OPERANDO OMITIDO
 L_99:
@@ -395,14 +407,16 @@ L_108:
 	; OPERANDO OMITIDO
 L_109:
 	PUSH OFFSET _CTE_A_es_mayor
-	CALL _print_string
-	ADD ESP, 4
+	PUSH OFFSET _FMT_STRING
+	CALL printf
+	ADD ESP, 8
 L_110:
 	; OPERANDO OMITIDO
 L_111:
 	PUSH OFFSET _CTE_____FIN_DE_PRUEBAS____
-	CALL _print_string
-	ADD ESP, 4
+	PUSH OFFSET _FMT_STRING
+	CALL printf
+	ADD ESP, 8
 
 	; --- Fin Traduccion Polaca Inversa --- 
 _PRUEBAINTEGRAL_PRUEBAINTEGRAL_EPILOGUE:
