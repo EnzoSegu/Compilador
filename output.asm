@@ -15,42 +15,41 @@ extern _print_int:PROC
 
 .DATA
 ; Variables Auxiliares (DD ?) y Constantes
-_PRUEBAINTEGRAL_PRUEBAINTEGRAL           DD ? ; (uso=programa tipo=null)
-_A_PRUEBAINTEGRAL_LAMBDA_ANON_1          DD ?
-_B_PRUEBAINTEGRAL                        DD ?
-_RESULTADO_PRUEBAINTEGRAL                DD ?
-_CONTADOR_PRUEBAINTEGRAL                 DD ?
-_FLOTANTE_PRUEBAINTEGRAL                 DD ?
-_CTE_10I                                 DD 10
-_CTE_5I                                  DD 5
-_CTE_____INICIO_DE_PRUEBAS____           DB "--- INICIO DE PRUEBAS ---", 0
-_CTE_A_vale__10__                        DB "A vale (10):", 0
-_@T1_PRUEBAINTEGRAL                      DD ?
-_CTE_Correcto__A_es_mayor_que_B          DB "Correcto: A es mayor que B", 0
-_CTE_Error__A_no_deberia_ser_menor       DB "Error: A no deberia ser menor", 0
-_@T2_PRUEBAINTEGRAL                      DD ?
-_CTE_2_5                                 DD 2.5
-_@T3_PRUEBAINTEGRAL                      DD ?
-_CTE_Prueba_TOF__12_5__                  DB "Prueba TOF (12.5):", 0
-_CTE_For_Ascendente__1_to_3__            DB "For Ascendente (1 to 3):", 0
-_CTE_1I                                  DD 1
-_CTE_3I                                  DD 3
-_@T4_PRUEBAINTEGRAL                      DD ?
-_@T5_PRUEBAINTEGRAL                      DD ?
-_CTE_For_Descendente__3_to_1__           DB "For Descendente (3 to 1):", 0
-_@T6_PRUEBAINTEGRAL                      DD ?
-_@T7_PRUEBAINTEGRAL                      DD ?
-_CTE_Asignacion_Multiple_A_B_=_1_2_      DB "Asignacion Multiple A,B = 1,2:", 0
-_CTE_Prueba_Lambda__Imprime_100__        DB "Prueba Lambda (Imprime 100):", 0
-_@T8_PRUEBAINTEGRAL_LAMBDA_ANON_1        DD ?
-_CTE_A_es_mayor                          DB "A es mayor", 0
-_CTE_____FIN_DE_PRUEBAS____              DB "--- FIN DE PRUEBAS ---", 0
-_CTE_1                                   DD 1
+_A_PRUEBAINTEGRAL_LAMBDA_ANON_1	DD ?
+_B_PRUEBAINTEGRAL	DD ?
+_RESULTADO_PRUEBAINTEGRAL	DD ?
+_CONTADOR_PRUEBAINTEGRAL	DD ?
+_FLOTANTE_PRUEBAINTEGRAL	DD ?
+_CTE_10I	DD 10
+_CTE_5I	DD 5
+_CTE_____INICIO_DE_PRUEBAS____	DB "--- INICIO DE PRUEBAS ---", 0
+_CTE_A_vale__10__	DB "A vale (10):", 0
+_@T1_PRUEBAINTEGRAL	DD ?
+_CTE_Correcto__A_es_mayor_que_B	DB "Correcto: A es mayor que B", 0
+_CTE_Error__A_no_deberia_ser_menor	DB "Error: A no deberia ser menor", 0
+_@T2_PRUEBAINTEGRAL	DD ?
+_CTE_2_5	DD 2.5
+_@T3_PRUEBAINTEGRAL	DD ?
+_CTE_Prueba_TOF__12_5__	DB "Prueba TOF (12.5):", 0
+_CTE_For_Ascendente__1_to_3__	DB "For Ascendente (1 to 3):", 0
+_CTE_1I	DD 1
+_CTE_3I	DD 3
+_@T4_PRUEBAINTEGRAL	DD ?
+_@T5_PRUEBAINTEGRAL	DD ?
+_CTE_For_Descendente__3_to_1__	DB "For Descendente (3 to 1):", 0
+_@T6_PRUEBAINTEGRAL	DD ?
+_@T7_PRUEBAINTEGRAL	DD ?
+_CTE_Asignacion_Multiple_A_B___1_2_	DB "Asignacion Multiple A,B = 1,2:", 0
+_CTE_Prueba_Lambda__Imprime_100__	DB "Prueba Lambda (Imprime 100):", 0
+_@T8_PRUEBAINTEGRAL_LAMBDA_ANON_1	DD ?
+_CTE_A_es_mayor	DB "A es mayor", 0
+_CTE_____FIN_DE_PRUEBAS____	DB "--- FIN DE PRUEBAS ---", 0
+_CTE_1	DD 1
 
 ; Rutinas de error de Runtime
-_DIV_CERO                                DB "Error en runtime: Division por cero!", 0
-_OVERFLOW_FLOAT                          DB "Error en runtime: Overflow de flotante!", 0
-_RECURSION_ERR                           DB "Error en runtime: Recursion directa prohibida!", 0
+_DIV_CERO	DB "Error en runtime: Division por cero!", 0
+_OVERFLOW_FLOAT	DB "Error en runtime: Overflow de flotante!", 0
+_RECURSION_ERR	DB "Error en runtime: Recursion directa prohibida!", 0
 
 .CODE
 _RTH_DIV_CERO:
@@ -68,6 +67,11 @@ _RTH_RECURSION_DIRECTA:
 	CALL _print_string
 	ADD ESP, 4
 	JMP _EXIT_PROGRAM
+
+start:
+	CALL _PRUEBAINTEGRAL_PRUEBAINTEGRAL
+_EXIT_PROGRAM:
+	INVOKE ExitProcess, 0
 
 _PRUEBAINTEGRAL_PRUEBAINTEGRAL PROC
 	PUSH EBP
@@ -327,7 +331,7 @@ L_86:
 L_87:
 	; OPERANDO OMITIDO
 L_88:
-	PUSH OFFSET _CTE_Asignacion_Multiple_A_B_=_1_2_
+	PUSH OFFSET _CTE_Asignacion_Multiple_A_B___1_2_
 	CALL _print_string
 	ADD ESP, 4
 L_89:
@@ -406,9 +410,4 @@ _PRUEBAINTEGRAL_PRUEBAINTEGRAL_EPILOGUE:
 	POP EBP
 	RET
 _PRUEBAINTEGRAL_PRUEBAINTEGRAL ENDP
-
-start:
-	; NO SE ENCONTRO MAIN - start vacio
-_EXIT_PROGRAM:
-	INVOKE ExitProcess, 0
 END start

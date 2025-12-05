@@ -47,9 +47,9 @@ public class GeneradorAssembler {
         writer.write("includelib \\masm32\\lib\\masm32.lib\n");
         writer.write("\n");
         writer.write("; --- Importar Rutinas Externas (Asumiendo que existen) ---\n");
-        writer.write("extern _print_float:PROC\n");
-        writer.write("extern _print_string:PROC\n");
-        writer.write("extern _print_int:PROC\n");
+        writer.write("extern print_float:PROC\n");
+        writer.write("extern print_string:PROC\n");
+        writer.write("extern print_int:PROC\n");
         writer.write("\n");
     }
 
@@ -69,9 +69,14 @@ public class GeneradorAssembler {
                 continue; 
             }
 
+            if ("programa".equals(uso)) {
+             emittedSymbols.add(asmName); 
+             continue;
+            }
+
             // 1. Variables, Parámetros y Temporales (Asignación de espacio)
             if ("variable".equals(uso) || "parametro".equals(uso) || "temporal".equals(uso) || "parametro_lambda".equals(uso)) {
-                writer.write(String.format("%-40s DD ?\n", asmName)); 
+                writer.write(String.format("%s\tDD ?\n", asmName)); 
                 emittedSymbols.add(asmName);
             } 
             // 2. Constantes
@@ -92,7 +97,7 @@ public class GeneradorAssembler {
                         // seguridad: si no hay literal numérico, inicializo a 0
                         cleanLexeme = "0";
                     }
-                    writer.write(String.format("%-40s DD %s\n", asmName, cleanLexeme));
+                    writer.write(String.format("%s\tDD %s\n", asmName, cleanLexeme));
                     emittedSymbols.add(asmName);
                 }
                 else if ("string".equals(tipo)) {
@@ -106,7 +111,7 @@ public class GeneradorAssembler {
                     // Escapar comillas internas para MASM
                     content = content.replace("\"", "\\\"");
                     // Si está vacío, al menos emitimos una cadena vacía terminada en 0
-                    writer.write(String.format("%-40s DB \"%s\", 0\n", asmName, content));
+                    writer.write(String.format("%s\tDB \"%s\", 0\n", asmName, content));
                     emittedSymbols.add(asmName);
                 } else {
                     // Uso desconocido: declarar como DD ? por seguridad
@@ -115,29 +120,29 @@ public class GeneradorAssembler {
                 }
             } else {
                 // Otros usos inesperados: declarar como DD ?
-                writer.write(String.format("%-40s DD ? ; (uso=%s tipo=%s)\n", asmName, uso, entry.getTipo()));
+                writer.write(String.format("%s\tDD ? ; (uso=%s tipo=%s)\n", asmName, uso, entry.getTipo()));
                 emittedSymbols.add(asmName);
             }
         }
         
         // Añadir la constante '_CTE_1' usada internamente para FORs si no existe
         if (!emittedSymbols.contains("_CTE_1")) {
-             writer.write(String.format("%-40s DD 1\n", "_CTE_1"));
+             writer.write("_CTE_1\tDD 1\n");
              emittedSymbols.add("_CTE_1");
         }
         
         // Mensajes de Error de Runtime (asegurar que estén presentes)
         writer.write("\n; Rutinas de error de Runtime\n");
         if (!emittedSymbols.contains("_DIV_CERO")) {
-            writer.write(String.format("%-40s DB \"%s\", 0\n", "_DIV_CERO", "Error en runtime: Division por cero!"));
+            writer.write(String.format("_DIV_CERO\tDB \"%s\", 0\n", "Error en runtime: Division por cero!"));
             emittedSymbols.add("_DIV_CERO");
         }
         if (!emittedSymbols.contains("_OVERFLOW_FLOAT")) {
-            writer.write(String.format("%-40s DB \"%s\", 0\n", "_OVERFLOW_FLOAT", "Error en runtime: Overflow de flotante!"));
+            writer.write(String.format("_OVERFLOW_FLOAT\tDB \"%s\", 0\n", "Error en runtime: Overflow de flotante!"));
             emittedSymbols.add("_OVERFLOW_FLOAT");
         }
         if (!emittedSymbols.contains("_RECURSION_ERR")) {
-            writer.write(String.format("%-40s DB \"%s\", 0\n", "_RECURSION_ERR", "Error en runtime: Recursion directa prohibida!"));
+            writer.write(String.format("_RECURSION_ERR\tDB \"%s\", 0\n", "Error en runtime: Recursion directa prohibida!"));
             emittedSymbols.add("_RECURSION_ERR");
         }
         writer.write("\n");
@@ -149,39 +154,57 @@ public class GeneradorAssembler {
         // Rutina de error para división por cero
         writer.write("_RTH_DIV_CERO:\n");
         writer.write("\tPUSH OFFSET _DIV_CERO\n");
-        writer.write("\tCALL _print_string\n");
+        writer.write("\tCALL print_string\n");
         writer.write("\tADD ESP, 4\n");
         writer.write("\tJMP _EXIT_PROGRAM\n");
         
         // Rutina de error para Overflow de flotante (Fix A2005)
         writer.write("_RTH_OVERFLOW_FLOAT:\n");
         writer.write("\tPUSH OFFSET _OVERFLOW_FLOAT\n");
-        writer.write("\tCALL _print_string\n");
+        writer.write("\tCALL print_string\n");
         writer.write("\tADD ESP, 4\n");
         writer.write("\tJMP _EXIT_PROGRAM\n");
         
         // Rutina de error para recursión directa (Fix A2006)
         writer.write("_RTH_RECURSION_DIRECTA:\n");
         writer.write("\tPUSH OFFSET _RECURSION_ERR\n");
-        writer.write("\tCALL _print_string\n");
+        writer.write("\tCALL print_string\n");
         writer.write("\tADD ESP, 4\n");
         writer.write("\tJMP _EXIT_PROGRAM\n");
         
         String mainFuncName = null;
         PolacaInversa mainPolaca = null;
 
-        for (Map.Entry<String, PolacaInversa> entry : polacaCompleta.entrySet()) {
-            String funcName = entry.getKey();
-            PolacaInversa polaca = entry.getValue();
+        for (SymbolEntry entry : symbolTable.getAllEntries()) {
+        if ("programa".equals(entry.getUso())) {
+            String funcName = entry.getMangledName();
+            PolacaInversa polaca = polacaCompleta.get(funcName); 
             
-            if (funcName != null && funcName.toUpperCase().contains("MAIN")) {
+            if (polaca != null) {
                 mainFuncName = funcName;
                 mainPolaca = polaca;
-            } else {
-                this.currentFunctionName = funcName; 
-                generateFunctionCode(funcName, polaca);
+                break; // Encontrado el programa principal
             }
         }
+    }
+
+        for (Map.Entry<String, PolacaInversa> entry : polacaCompleta.entrySet()) {
+        String funcName = entry.getKey();
+        PolacaInversa polaca = entry.getValue();
+        
+        // 1. Omitir el programa principal (se define al final)
+        if (mainFuncName != null && mainFuncName.equals(funcName)) {
+            continue;
+        }
+        
+        // 2. Omitir los bloques Lambda anónimos, ya que no son procedimientos PROC/ENDP propios
+        if (funcName.toUpperCase().contains("LAMBDA_ANON_")) {
+             continue;
+        }
+        
+        this.currentFunctionName = funcName; 
+        generateFunctionCode(funcName, polaca);
+    }
 
         // Generar el punto de entrada 'start' y la definición PROC/ENDP para MAIN.
         if (mainFuncName != null) {
@@ -340,7 +363,8 @@ public class GeneradorAssembler {
             if (mangled == null) mangled = "anon";
         }
         return "_" + mangled.replace(":", "_").replace(".", "_").replace("\"", "").replace(" ", "_")
-                .replace("+", "_").replace("-", "_").replace("(", "_").replace(")", "_").replace(",", "_");
+                .replace("+", "_").replace("-", "_").replace("(", "_").replace(")", "_").replace(",", "_")
+                .replace("=", "_");
     }
 
     private String normalizeFuncKeyToAsm(String funcName) {
@@ -558,15 +582,15 @@ public class GeneradorAssembler {
 
             if ("int".equals(op1.getTipo())) {
                 writer.write("\tPUSH " + asmName + "\n");
-                writer.write("\tCALL _print_int\n");
+                writer.write("\tCALL print_int\n");
                 writer.write("\tADD ESP, 4\n"); 
             } else if ("float".equals(op1.getTipo())) {
                 writer.write("\tPUSH OFFSET " + asmName + "\n");
-                writer.write("\tCALL _print_float\n");
+                writer.write("\tCALL print_float\n");
                 writer.write("\tADD ESP, 4\n"); 
             } else if ("string".equals(op1.getTipo())) {
                 writer.write("\tPUSH OFFSET " + asmName + "\n");
-                writer.write("\tCALL _print_string\n");
+                writer.write("\tCALL print_string\n");
                 writer.write("\tADD ESP, 4\n");
             } else {
                 writer.write("\t; WARNING: PRINT tipo no soportado: " + op1.getTipo() + "\n");
