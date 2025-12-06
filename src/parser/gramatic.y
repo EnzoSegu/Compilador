@@ -309,9 +309,10 @@ declaracion_variable
         { 
             addError("Falta lista de variables a continuación de var.");
         } 
-    | VAR error SEMICOLON 
+    | VAR lista_variables error
         { 
-            addError("Error grave en la 'lista_variables'. Recuperando en ';'."); 
+            addError("Error Sintáctico: Falta punto y coma ';' al final de la declaración de variables.");
+            
             listaVariablesError = false; 
         }
     ;
@@ -373,12 +374,13 @@ lista_variables
             lista.add(se);
             $$ = lista; 
         }
-    | lista_variables error identificador_completo
+| lista_variables identificador_completo
         { 
+            addError("Error Sintáctico: Falta ',' en la declaración de variables.");
             listaVariablesError = true; 
             errorEnProduccion = true; // Activar
-        }
-    ;
+        };
+        
 identificador_destino:
     identificador_completo {
         SymbolEntry entradaParser = (SymbolEntry)$1;
@@ -1136,7 +1138,7 @@ asignacion
         listaVariablesError = false;
         listaExpresionesError = false;
     }
-     identificador_destino ASSIGN_COLON expresion error
+    | identificador_destino ASSIGN_COLON expresion error
         { 
             addError("Error Sintáctico: Falta punto y coma ';' al final de la asignación.");
             // Opcional: Ejecutar la lógica de asignación si quieres recuperar la semántica

@@ -1,7 +1,7 @@
 PRUEBAINTEGRAL {
     var A, B, RESULTADO;
-    var CONTADOR;
     var FLOTANTE;
+    var CONTADOR;
     A := 10I;
     B := 5I;
     print("--- INICIO DE PRUEBAS ---");
@@ -17,7 +17,7 @@ PRUEBAINTEGRAL {
 
     ## 4. CONVERSION EXPLICITA TOF (Tema 29) ##
     ## Probamos sumar un entero convertido con un flotante ##
-    FLOTANTE := tof(A) + 2.5;
+    FLOTANTE := 2.5 + tof(A) ;
     print("Prueba TOF (12.5):");
     print(FLOTANTE);
 
@@ -25,14 +25,14 @@ PRUEBAINTEGRAL {
     ## El compilador debe detectar que 1 <= 3 y generar incremento ##
     print("For Ascendente (1 to 3):");
     for (CONTADOR from 1I to 3I) {
-        print(CONTADOR);
+        print(FLOTANTE);
     };
 
     ## 6. CICLO FOR DESCENDENTE (Tema 15) ##
     ## El compilador debe detectar que 3 > 1 y generar decremento ##
     print("For Descendente (3 to 1):");
     for (CONTADOR from 3I to 1I) {
-        print(CONTADOR);
+        print(FLOTANTE);
     };
 
     ## 7. ASIGNACION MULTIPLE (Tema 16) ##
