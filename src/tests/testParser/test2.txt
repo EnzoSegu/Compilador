@@ -3,7 +3,7 @@ PRUEBAINTEGRAL {
     var FLOTANTE;
     var CONTADOR;
     var FLOTANTE2;
-    FLOTANTE2:=-3.4F+32;
+    FLOTANTE2:=0.5F+2;
     A := 10I;
     B := 5I;
     print("--- INICIO DE PRUEBAS ---");

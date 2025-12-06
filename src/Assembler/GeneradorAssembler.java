@@ -99,6 +99,9 @@ public class GeneradorAssembler {
                     if (cleanLexeme.isEmpty()) {
                         cleanLexeme = "0.0"; 
                     }
+                    if ("float".equals(tipo)) {
+                    cleanLexeme = cleanLexeme.replace('F', 'E').replace('f', 'e');
+                    }
                     writer.write(String.format("%s\tDD %s\n", asmName, cleanLexeme));
                     emittedSymbols.add(asmName);
                 }
