@@ -2,10 +2,13 @@ PRUEBAINTEGRAL {
     var A, B, RESULTADO;
     var FLOTANTE;
     var CONTADOR;
+    var FLOTANTE2;
+    FLOTANTE2:=-3.4F+32;
     A := 10I;
     B := 5I;
     print("--- INICIO DE PRUEBAS ---");
-    print("A vale (10):")
+    print(FLOTANTE2);
+    print("A vale (10):");
     print(A);
 
     ## 3. ESTRUCTURA IF-ELSE ##

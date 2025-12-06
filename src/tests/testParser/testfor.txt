@@ -1,0 +1,14 @@
+PRUEBAINTEGRAL {
+    var FLOTANTE;
+    var CONTADOR;
+    A := 10I;
+    FLOTANTE := 2.5 + tof(A) ;
+    print("For Ascendente (1 to 3):");
+    for (CONTADOR from 1I to 3I) {
+        print(FLOTANTE);
+    };
+    print("For Descendente (3 to 1):");
+    for (CONTADOR from 3I to 1I) {
+        print(FLOTANTE);
+    };
+}

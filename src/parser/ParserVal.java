@@ -9,9 +9,7 @@ public class ParserVal
     public double dval;
     public String sval;
     public Object obj;
-
     
-    // 👇 Tus tipos personalizados
     public SymbolEntry entry;
     public PolacaElement Polacaelement;
     public List<PolacaElement> listPe;
@@ -26,7 +24,7 @@ public class ParserVal
     // Constructores
     public ParserVal() { }
 
-    
+
     public ParserVal(int val) { ival = val; }
     public ParserVal(double val) { dval = val; }
     public ParserVal(String val) { sval = val; }

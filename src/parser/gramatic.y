@@ -57,13 +57,15 @@ import codigointermedio.*;
 
     // 1. Método para tus errores manuales en la gramática (Sintácticos)
     private void addError(String mensaje) {
-        String error = "Línea " + lexer.getContext().getLine() + ": " + mensaje;
+        int linea=lexer.getContext().getLine()-1;
+        String error = "Línea " + linea + ": " + mensaje;
         listaErrores.add(error);
         errorEnProduccion = true;
     }
     // 1. Método para tus errores manuales en la gramática (Sintácticos)
     private void addErrorSemicolon(String mensaje) {
-        String error = "Línea " + lexer.getContext().getLine() -1 + ": " + mensaje;
+        int linea = lexer.getContext().getLine() -1;
+        String error = "Línea " + linea + ": " + mensaje;
         listaErrores.add(error);
         errorEnProduccion = true;
     }
@@ -78,7 +80,7 @@ import codigointermedio.*;
 
     // 3. Método automático de BYACC (Sintácticos por defecto)
     public void yyerror(String s) {
-        String error = "Error Sintáctico - Línea " + lexer.getContext().getLine() + ": " + s;
+        String error = "Error Sintáctico " + ": " + s;
         listaErrores.add(error);
         errorEnProduccion = true;
     }
@@ -847,7 +849,7 @@ encabezado_for
              yyerror("La variable del for '" + id.getLexeme() + "' debe ser de tipo 'int'.", true);
              errorEnProduccion = true;
         } else if (id.getTipo().equals("untype")) {
-             id.setTipo("int"); 
+             id.setTipo("int");
         }
             
         if (!errorEnProduccion) {
@@ -855,9 +857,15 @@ encabezado_for
         int val1 = 0;
         int val2 = 0;
         try {
-             val1 = Integer.parseInt(cte1.getResultEntry().getLexeme());
-             val2 = Integer.parseInt(cte2.getResultEntry().getLexeme());
+             // [CORRECCIÓN APLICADA AQUÍ] Eliminamos el sufijo 'I' o 'i' antes de parsear.
+             String lexeme1 = cte1.getResultEntry().getLexeme().replaceAll("[Ii]", "");
+             String lexeme2 = cte2.getResultEntry().getLexeme().replaceAll("[Ii]", "");
+             
+             val1 = Integer.parseInt(lexeme1);
+             val2 = Integer.parseInt(lexeme2);
+             
         } catch(Exception e) {
+             // Esto se dejaría para errores no capturados por el léxico.
         }
         
         PolacaElement opCte1 = PI().generateOperand(cte1.getResultEntry());
@@ -866,14 +874,15 @@ encabezado_for
         int labelStart = PI().getCurrentAddress();
         
         String operador;
-        boolean esIncremento; 
+        boolean esIncremento;
         
+        // La lógica de comparación val1 <= val2 determina si es ascendente o descendente.
         if (val1 <= val2) {
-            operador = "<="; 
+            operador = "<=";
             esIncremento = true;
         } else {
-            operador = ">="; 
-            esIncremento = false;
+            operador = ">="; // Correcto para descendente
+            esIncremento = false; // Correcto para decremento (-)
         }
         
         PolacaElement exprId = PI().generateOperand(id);
@@ -891,7 +900,6 @@ encabezado_for
         yyval.contextfor = nuevoContexto;
         }
     }
-    ;
 
 sentencia_for
     : encabezado_for LBRACE lista_sentencias_ejecutables RBRACE SEMICOLON
