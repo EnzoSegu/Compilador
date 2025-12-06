@@ -61,6 +61,12 @@ import codigointermedio.*;
         listaErrores.add(error);
         errorEnProduccion = true;
     }
+    // 1. Método para tus errores manuales en la gramática (Sintácticos)
+    private void addErrorSemicolon(String mensaje) {
+        String error = "Línea " + lexer.getContext().getLine() -1 + ": " + mensaje;
+        listaErrores.add(error);
+        errorEnProduccion = true;
+    }
 
     // 2. Método para errores SEMÁNTICOS (Tipos, declaraciones)
     // Se usa: yyerror("Mensaje", true);
@@ -704,21 +710,14 @@ sentencia_return
 sentencia_ejecutable
     : asignacion 
     | sentencia_return
-    | sentencia_print SEMICOLON
-    | sentencia_print error { 
-        // Detección específica para print
-        addError("Error Sintáctico: Falta punto y coma ';' al final de la sentencia PRINT."); 
-    }
+    | sentencia_print 
     | sentencia_if
     | sentencia_for
     | lambda_expresion
     ;
 sentencia_ejecutable_sin_return
     : asignacion 
-    | sentencia_print SEMICOLON
-    | sentencia_print error { 
-        addError("Error Sintáctico: Falta punto y coma ';' al final del PRINT (en función)."); 
-    }
+    | sentencia_print
     | sentencia_if
     | sentencia_for
     | lambda_expresion
@@ -726,7 +725,7 @@ sentencia_ejecutable_sin_return
     ;
 
 sentencia_print
-    : PRINT LPAREN expresion RPAREN 
+    : PRINT LPAREN expresion RPAREN SEMICOLON
        { 
             PolacaElement expr = (PolacaElement)$3;
             PI().generatePrint(expr);
@@ -735,10 +734,14 @@ sentencia_print
                 System.out.println("Línea " + lexer.getContext().getLine() + ": Print detectado");
             }
        }
-     | PRINT LPAREN error RPAREN 
+     | PRINT LPAREN error RPAREN SEMICOLON
        {
             addError("Falta argumento en print.");
-       };
+       }
+       | PRINT LPAREN expresion RPAREN error { 
+        addErrorSemicolon("Error Sintáctico: Falta punto y coma ';' al final del PRINT (en función)."); 
+    };
+
 
 
 lista_sentencias_ejecutables
@@ -1140,7 +1143,7 @@ asignacion
     }
     | identificador_destino ASSIGN_COLON expresion error
         { 
-            addError("Error Sintáctico: Falta punto y coma ';' al final de la asignación.");
+            addErrorSemicolon("Error Sintáctico: Falta punto y coma ';' al final de la asignación.");
             // Opcional: Ejecutar la lógica de asignación si quieres recuperar la semántica
         }
     | lista_variables_destino ASSIGN lista_expresiones error

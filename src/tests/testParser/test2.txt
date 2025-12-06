@@ -5,7 +5,7 @@ PRUEBAINTEGRAL {
     A := 10I;
     B := 5I;
     print("--- INICIO DE PRUEBAS ---");
-    print("A vale (10):");
+    print("A vale (10):")
     print(A);
 
     ## 3. ESTRUCTURA IF-ELSE ##
