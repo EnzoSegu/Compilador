@@ -1,0 +1,39 @@
+
+PROGRAMARUNTIMECHECKS {
+
+    float FRECURSIVA(float X) {
+        ## Esta llamada debe ser detectada por el generador de CALL y redirigida 
+         a _RTH_RECURSION_DIRECTA. ##
+        return (FRECURSIVA(1.0F+0->X)); 
+    }
+
+    var DIVISOR, RESULTADO;
+    var MAXVAL;
+    
+    DIVISOR := 0I; 
+    
+    ## 1. ERROR: División por Cero (Entero) ##
+    RESULTADO := 10I / DIVISOR; 
+    print("ESTO NO DEBE IMPRIMIRSE (Fallo en división por cero - INT)"); 
+
+    ## 2. ERROR: División por Cero (Flotante)
+    Reutilizamos DIVISOR, pero el Assembler debe tratar 0I como 0.0 ##
+    RESULTADO := 10.0 / DIVISOR; 
+    print("ESTO TAMPOCO DEBE IMPRIMIRSE (Fallo en división por cero - FLOAT)"); 
+
+    ## 3. ERROR: Overflow de Punto Flotante ##
+
+    MAXVAL := 3.40282347F+38; 
+    
+    ## Se multiplica por 10.0 para forzar el overflow de 32 bits ##
+    RESULTADO := MAXVAL * 10.0F+0; 
+    
+    print("ESTO TAMPOCO DEBE IMPRIMIRSE (Fallo en Overflow)"); 
+
+    ## 4. ERROR: Recursión Directa ##
+
+    ## Esta invocación debe activar la rutina _RTH_RECURSION_DIRECTA ##
+    RESULTADO := FRECURSIVA(1.0F+0->X); 
+    
+    print("FIN PRUEBAS DE FALLO");
+}

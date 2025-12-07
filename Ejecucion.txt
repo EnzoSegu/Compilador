@@ -1,0 +1,8 @@
+desde la rama main hacer esto para ejecutar un archvivo
+java -cp out parser.MainParser src/test/nombre del txt
+
+una vez que te genera el asm porque no hay errores
+hacer los siguientes 3 comandos 
+C:\masm32\bin\ml /c /Zd /coff output.asm
+C:\masm32\bin\Link /SUBSYSTEM:CONSOLE output.obj
+.\output.exe

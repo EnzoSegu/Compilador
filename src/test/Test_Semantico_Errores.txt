@@ -1,0 +1,54 @@
+
+PROGRAMAERRORESSEMANTICOS {
+
+    int FREDECLARADA(int P) {
+        return (P);
+    }
+    float FREDECLARADA(float P) { ## ERROR Semántico: Función 'F_REDECLARADA' redeclarada ##
+        return (P);
+    }
+
+    int FMULTIPLERET(int P) {
+        return (1I, 2I); ## ERROR Semántico: La función F_MULTIPLERET debe retornar 1 valor, pero retorna 2
+    }
+
+    int FCR(cr le int PCR) {
+        return (PCR);
+    }
+
+    var A, B;
+    var A; ## ERROR Semántico: Variable 'A' redeclarada ##
+    var FVAR, IVAR;
+    
+    IVAR := 10I;
+    FVAR := 2.5;
+
+    ## 1. INCOMPATIBILIDAD DE TIPOS ##
+    
+    IVAR := FVAR; ## ERROR Semántico: Asignación float a int (incompatible) ##
+    
+    ## ERROR Semántico: Operación int + float sin TOF ##
+    RESULTADO := IVAR + FVAR; 
+    
+    ## 2. ALCANCE Y VARIABLES NO DECLARADAS ##
+
+    IVAR := NODECLARADA; ## ERROR Semántico: Variable 'NODECLARADA' no declarada ##
+
+    IVAR := PROGRAMAINEXISTENTE.A; ## ERROR Semántico: Prefijo de ámbito no existe ##
+
+    ## 3. ASIGNACIÓN MÚLTIPLE (REQUISITO TEMA 21 - INSUFICIENCIA) ##
+    
+    var R1, R2, R3;
+    R1 := FMULTIPLERET(1I->P); ## OK (Asigna 1 de los 2 valores) ##
+    
+    R1, R2, R3 := FMULTIPLERET(1I->P); ## ERROR Semántico: Retorna 2, asigno 3 (Insuficiencia) ##
+
+    ## 4. USO INCORRECTO DE PARÁMETROS CR (Tema 26) ##
+    
+    ## ERROR Semántico: El parámetro 'P_CR' es CR, debe ser una variable. ##
+    R1 := FCR(10I->PCR); 
+    
+    ## 5. FUNCIONES COMO VARIABLES ##
+    
+    IVAR := FREDECLARADA; ## ERROR Semántico: Uso incorrecto de función como variable ##
+}

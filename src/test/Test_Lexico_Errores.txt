@@ -1,0 +1,68 @@
+PRUEBALEXICO {
+
+    ## 1. CONSTANTES ENTERAS (INT16) Y RANGOS ##
+    var VARMAX, VARMIN, OUTMAX, OUTMIN;
+    
+    VARMAX := 32767I;  ##OK: Límite superior del rango 16-bit##
+    VARMIN := -32768I; ##OK: Límite inferior del rango 16-bit##    
+    ## ERROR LÉXICO: Entero fuera de rango ##
+    OUTMAX := 32768I;  
+    OUTMIN := -32769I; 
+    
+    ## 2. CONSTANTES FLOTANTES (FLOAT32) Y FORMATOS ##
+    var FVALIDO, FEXP, FPARTES;
+    
+    ## OK: Límite superior de rango (3.40282347F+38) ##
+    FVALIDO := 3.40282347F+38; 
+    
+    ## ERROR LÉXICO: Constante FLOAT32 fuera de rango (AS4) ##
+    FVALIDO := 3.4028235F+38; 
+
+    ## OK: Formatos válidos (int, .dec, int.dec, con/sin exponente) ##
+    FPARTES := 1.0; 
+    FPARTES := .5F+10;
+    FPARTES := 10.F-5;
+    FPARTES := 0.0;
+    
+    ## 3. IDENTIFICADORES ##
+    var IDNORMAL, IDMAX20, IDOVER20, IDPCT1; 
+
+    ##OK: ID con letras y dígitos, y el carácter '%' permitido##
+    IDPCT1 := 10I; 
+    IDPCT201 := 20I;
+
+    ## WARNING: Identificador demasiado largo, truncado a 20 caracteres ##
+    IDOVER20CHARSABCDEFG := 3I; 
+    
+    ## ERROR LÉXICO: Identificador con minúsculas (AS5) ##
+    idlower := 4I; 
+    
+    ## ERROR LÉXICO: Carácter inválido ($) ##
+    IDBAD$CHAR := 5I;
+    
+    ## ERROR LÉXICO: Carácter inválido (_) ##
+    ID_UNDERSCORE := 6I;
+
+    ## 4. PALABRAS RESERVADAS Y SÍMBOLOS ##
+    var VARKW, FORKW, CVKW;
+    
+    VAR KW; ## ERROR: Espacio o caracter no permitido después de palabra reservada ##
+    if (VARKW == FORKW) { } endif; ## ERROR: Palabra reservada "if" en minúsculas ##
+    
+    ## 5. COMENTARIOS Y CADENAS MAL ESCRITAS ##
+    
+    ## Comentario multilínea que
+       debe ser ignorado por el compilador ##
+    
+    ## OK: Operadores y delimitadores ##
+    VARKW := VARKW + FORKW / 2I;
+    IF (VARKW >= FORKW) { VARKW := -1I; } ENDIF; 
+    VARKW := 10I := VARKW; ## ASIGNACION_COLON luego ASSIGN ##
+
+    ## ERROR LÉXICO: Salto de línea en cadena (AS6) ##
+    print("Cadena que salta
+línea.");
+
+    ## ERROR LÉXICO: Comentario sin cerrar al final del archivo ##
+    ## Comentario sin cerrar
+}
