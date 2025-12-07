@@ -9,8 +9,15 @@ import Assembler.GeneradorAssembler;
 public class MainParser {
 
     public static void main(String[] args) {
-        // CAMBIA ESTO POR TU RUTA REAL
-        String filePath = "src\\tests\\testParser\\test2.txt";
+        // --- INICIO DE MODIFICACIÓN ---
+        if (args.length < 1) {
+            System.out.println("Uso: java parser.MainParser <ruta_del_archivo_fuente>");
+            return;
+        }
+        // Usar el primer argumento como ruta del archivo
+        String filePath = args[0]; 
+        // --- FIN DE MODIFICACIÓN ---
+        
         String asmFilePath = "output.asm"; // Nombre del archivo de salida ASM
 
         System.out.println("=================================================");
@@ -19,7 +26,6 @@ public class MainParser {
 
         // =================================================================
         // FASE 1: ANÁLISIS LÉXICO Y GENERACIÓN DE LISTA DE TOKENS (TP3 Requisito)
-        // Se necesita leer el archivo una vez más para el volcado léxico.
         // =================================================================
         System.out.println("\n=================================================");
         System.out.println("            LISTA DE TOKENS (LÉXICO)");
@@ -50,11 +56,10 @@ public class MainParser {
 
         // =================================================================
         // FASE 2: ANÁLISIS SINTÁCTICO Y GENERACIÓN DE CÓDIGO (TP3/TP4)
-        // Se abre el archivo por tercera vez (la primera fue para el volcado léxico,
-        // la segunda para la lectura de tokens, y esta para el parser)
         // =================================================================
         
-        try (FileReader parserReader = new FileReader(filePath)) {
+        // Se vuelve a abrir el archivo, ya que el primer escaneo consumió el stream.
+        try (FileReader parserReader = new FileReader(filePath)) { 
             
             Scanner scanner = new Scanner(parserReader);
             Parser parser = new Parser();

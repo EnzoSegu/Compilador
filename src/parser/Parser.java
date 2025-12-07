@@ -28,7 +28,7 @@ import java.util.Stack;
 import lexer.*;
 import codigointermedio.*; 
 
-
+@SuppressWarnings("unchecked")
 public class Parser
 {
 

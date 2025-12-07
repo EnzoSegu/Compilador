@@ -1,4 +1,5 @@
 PRUEBAINTEGRAL {
+    var A;
     var FLOTANTE;
     var CONTADOR;
     A := 10I;
