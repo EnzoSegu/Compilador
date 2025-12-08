@@ -42,7 +42,9 @@ public class ScannerContext {
     public void setToken(TokenType type, String lexeme) {
         this.token = new Token(type, lexeme);
     }
-
+    public void setToken(TokenType type, String lexeme, int line) {
+        this.token = new Token(type, lexeme, line);
+    }
     // AÑADIR ESTE
     public void setToken(TokenType type, SymbolEntry entry) {
         this.token = new Token(type, entry);

@@ -18,14 +18,14 @@ public class AS3 implements SemanticAction {
             // Chequeo de rango (16 bits)
             if (value < Short.MIN_VALUE || value > Short.MAX_VALUE) {
                 context.setToken(TokenType.ERROR, "Error Lexico" +
-                        ": entero fuera de rango -> " + value);
+                        ": entero fuera de rango -> " + value, context.getLine());
             } else {
                 SymbolEntry entry = new SymbolEntry(lexeme, "int", value);
                 context.setToken(TokenType.INT16, entry); // <-- ¡ARREGLADO!
             }
         } catch (NumberFormatException e) {
             context.setToken(TokenType.ERROR, "Error Lexico en línea " + context.getLine() +
-                    ": formato inválido para entero -> " + lexeme);
+                    ": formato inválido para entero -> " + lexeme, context.getLine());
         }
 
         context.clear(); // limpiar buffer de lexema

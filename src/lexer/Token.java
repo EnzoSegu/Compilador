@@ -4,17 +4,27 @@ public class Token {
     private TokenType type;
     private String lexeme;
     private SymbolEntry entry;
+    private int line;
+    public Token(TokenType type, String lexeme, int line) {
+        this.type = type;
+        this.lexeme = lexeme;
+        this.entry = null;
+        this.line = line;
+    }
 
     public Token(TokenType type, String lexeme) {
         this.type = type;
         this.lexeme = lexeme;
         this.entry = null;
+        this.line = -1;
     }
+    
 
     public Token(TokenType type) {
         this.type = type;
         this.lexeme = "";
         this.entry = null;
+        this.line = -1;
     }
 
     public Token(TokenType type, SymbolEntry symbolEntry) {
@@ -34,7 +44,9 @@ public class Token {
     public SymbolEntry getEntry() {
         return entry;
     }
-
+    public int getLine() {
+        return line;
+    }
     @Override
     public String toString() {
         if (TokenType.RESERVED_WORDS.containsValue(type)) {
@@ -67,4 +79,5 @@ public class Token {
         TokenType type = TokenType.fromLexeme(lexeme);
         return type != null ? type : TokenType.ERROR;
     }
+
 }

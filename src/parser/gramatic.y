@@ -57,7 +57,12 @@ import codigointermedio.*;
 
     // 1. Método para tus errores manuales en la gramática (Sintácticos)
     private void addError(String mensaje) {
-        int linea=lexer.getContext().getLine()-1;
+        int linea=lexer.getContext().getLine();
+        String error = "Línea " + linea + ": " + mensaje;
+        listaErrores.add(error);
+        errorEnProduccion = true;
+    }
+    private void addErrorLex(String mensaje, int linea) {
         String error = "Línea " + linea + ": " + mensaje;
         listaErrores.add(error);
         errorEnProduccion = true;
@@ -150,7 +155,7 @@ import codigointermedio.*;
             case INT_KW: return INT_KW;
             case FLOAT_KW: return FLOAT_KW;
             case ERROR:
-                addError(tok.getLexeme()); 
+                addErrorLex(tok.getLexeme(), tok.getLine()); 
                 SymbolEntry fakeEntry = new SymbolEntry("ERROR_IGNORE");
                 fakeEntry.setTipo("error"); 
                 yylval.entry = fakeEntry;
@@ -711,13 +716,12 @@ sentencia_return
             }
             listaExpresionesError = false;
         }
-    | RETURN error lista_expresiones RPAREN SEMICOLON{
+    | RETURN lista_expresiones RPAREN SEMICOLON{
         addError("Error Sintactico: Falta de '(' en return.");
     }
-    | RETURN LPAREN lista_expresiones error SEMICOLON{
-        addError("Error Sintactico: Falta de '(' en return.");
-    }
-    ;
+    | RETURN LPAREN lista_expresiones  SEMICOLON{
+        addError("Error Sintactico: Falta de ')' en return.");
+    };
 
 sentencia_ejecutable
     : asignacion 
