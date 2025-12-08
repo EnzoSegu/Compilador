@@ -18,17 +18,17 @@ PROGRAMAVALIDO {
     RESULTADO := A + B * 5I; 
     
     ## 2. INVOCACIÓN CON PASAJE DE PARÁMETROS NOMBRADO ##
-    RESULTADO := FUNCION_COMPLEJA(A->P_CR, 1.0->P_CV);
+    RESULTADO := FUNCIONCOMPLEJA(A->PCR, 1.0->PCV);
     
     ## 3. ASIGNACIÓN MÚLTIPLE (Tema 16 y 19) ##
     A, B = 5I, 6I;
     
     ## 4. CLAUSULA IF-ELSE-ENDIF ##
-    IF (A < B) { 
+    if (A < B) { 
         print("A ES MENOR"); 
-    } ELSE { 
+    } else{ 
         print("B ES MENOR"); 
-    } ENDIF;
+    } endif;
     
     ## 5. CICLO FOR ASCENDENTE Y DESCENDENTE (Tema 15) ##
     for (CONTADOR from 1I to 3I) {
@@ -42,5 +42,5 @@ PROGRAMAVALIDO {
     FVAR := 10.0 + tof(A);
     
     ## 7. EXPRESIÓN LAMBDA (Tema 27) ##
-    (int X) { IF (X == 10I) print("LAMBDA OK"); } (A);
+    (int X) { if (X == 10I) print("LAMBDA OK");} (A);
 }

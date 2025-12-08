@@ -1,5 +1,5 @@
 
-PROGRAMA_ERRORES_SINTACTICOS {
+PROGRAM_ERRORES_SINTACTICOS {
 
     int FUNCION_ERROR(int P1) {
         var VARLOCAL;
@@ -8,17 +8,18 @@ PROGRAMA_ERRORES_SINTACTICOS {
         ## ERROR: Falta RPAREN en return ##
         return (VARLOCAL); 
     }
+    
     var A, B;
     
-    A := 10I
+    A := 10I;
     
     ## ERROR: Falta SEMICOLON al final de la asignación ##
     B := 20I
     
     ## ERROR: Falta la palabra clave 'FROM' en el FOR ##
-    for (A 1I to 3I) { 
+    for (A from 1I to 3I) { 
         print(A);
-    }; 
+    };
     
     ## ERROR: Falta la palabra clave 'TO' en el FOR ##
     for (B from 1I 3I) { 

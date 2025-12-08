@@ -57,19 +57,19 @@ import codigointermedio.*;
 
     // 1. Método para tus errores manuales en la gramática (Sintácticos)
     private void addError(String mensaje) {
-        int linea=lexer.getContext().getLine();
-        String error = "Línea " + linea + ": " + mensaje;
-        listaErrores.add(error);
-        errorEnProduccion = true;
-    }
-    private void addErrorLex(String mensaje, int linea) {
+        int linea=lexer.getContext().getLine()-1;
         String error = "Línea " + linea + ": " + mensaje;
         listaErrores.add(error);
         errorEnProduccion = true;
     }
     // 1. Método para tus errores manuales en la gramática (Sintácticos)
     private void addErrorSemicolon(String mensaje) {
-        int linea = lexer.getContext().getLine() -1;
+        int linea = lexer.getContext().getLine();
+        String error = "Línea " + linea + ": " + mensaje;
+        listaErrores.add(error);
+        errorEnProduccion = true;
+    }
+    private void addErrorLex(String mensaje, int linea) {
         String error = "Línea " + linea + ": " + mensaje;
         listaErrores.add(error);
         errorEnProduccion = true;
@@ -86,7 +86,7 @@ import codigointermedio.*;
 
     // 3. Método automático de BYACC (Sintácticos por defecto)
     public void yyerror(String s) {
-        String error = "Línea " + lexer.getContext().getLine() + ": Error Semántico : " + s;
+        String error = "Línea " + lexer.getContext().getLine() + ": Error Sintactico : " + s;
         listaErrores.add(error);
         errorEnProduccion = true;
     }
@@ -719,9 +719,10 @@ sentencia_return
     | RETURN lista_expresiones RPAREN SEMICOLON{
         addError("Error Sintactico: Falta de '(' en return.");
     }
-    | RETURN LPAREN lista_expresiones  SEMICOLON{
-        addError("Error Sintactico: Falta de ')' en return.");
-    };
+    | RETURN LPAREN lista_expresiones error SEMICOLON{
+        addError("Error Sintactico: Falta de '(' en return.");
+    }
+    ;
 
 sentencia_ejecutable
     : asignacion 
@@ -1166,7 +1167,6 @@ asignacion
     | identificador_destino ASSIGN_COLON expresion error
         { 
             addErrorSemicolon("Error Sintáctico: Falta punto y coma ';' al final de la asignación.");
-            // Opcional: Ejecutar la lógica de asignación si quieres recuperar la semántica
         }
     | lista_variables_destino ASSIGN lista_expresiones error
             { 
