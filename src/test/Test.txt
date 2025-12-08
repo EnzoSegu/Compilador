@@ -1,0 +1,4 @@
+PROGRAMERRORESSINTACTICOS {
+    var A, B;
+    A := 10I
+}

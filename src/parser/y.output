@@ -143,8 +143,8 @@
 
  107  asignacion : identificador_destino ASSIGN_COLON expresion SEMICOLON
  108             | lista_variables_destino ASSIGN lista_expresiones SEMICOLON
- 109             | identificador_destino ASSIGN_COLON expresion error
- 110             | lista_variables_destino ASSIGN lista_expresiones error
+ 109             | identificador_destino ASSIGN_COLON expresion
+ 110             | lista_variables_destino ASSIGN lista_expresiones
 
  111  lista_expresiones : expresion
  112                    | lista_expresiones COMMA expresion
@@ -247,6 +247,7 @@ state 2
 	LPAREN  reduce 22
 	RPAREN  reduce 22
 	LBRACE  reduce 22
+	RBRACE  reduce 22
 	SEMICOLON  reduce 22
 	ARROW  reduce 22
 	COMMA  reduce 22
@@ -606,7 +607,7 @@ state 29
 state 30
 	lista_variables_destino : identificador_destino .  (31)
 	asignacion : identificador_destino . ASSIGN_COLON expresion SEMICOLON  (107)
-	asignacion : identificador_destino . ASSIGN_COLON expresion error  (109)
+	asignacion : identificador_destino . ASSIGN_COLON expresion  (109)
 
 	ASSIGN_COLON  shift 74
 	ASSIGN  reduce 31
@@ -634,7 +635,7 @@ state 32
 state 33
 	lista_variables_destino : lista_variables_destino . COMMA identificador_destino  (32)
 	asignacion : lista_variables_destino . ASSIGN lista_expresiones SEMICOLON  (108)
-	asignacion : lista_variables_destino . ASSIGN lista_expresiones error  (110)
+	asignacion : lista_variables_destino . ASSIGN lista_expresiones  (110)
 
 	ASSIGN  shift 77
 	COMMA  shift 78
@@ -823,6 +824,7 @@ state 52
 	identificador_completo  goto 64
 
 
+53: shift/reduce conflict (shift 91, reduce 22) on LPAREN
 state 53
 	identificador : ID .  (22)
 	identificador : ID . UNDERSCORE ID  (23)
@@ -837,6 +839,11 @@ state 53
 	STRING  reduce 22
 	INT16  reduce 22
 	FLOAT32  reduce 22
+	IF  reduce 22
+	PRINT  reduce 22
+	RETURN  reduce 22
+	VAR  reduce 22
+	FOR  reduce 22
 	TO  reduce 22
 	PLUS  reduce 22
 	MINUS  reduce 22
@@ -849,11 +856,14 @@ state 53
 	GT  reduce 22
 	GE  reduce 22
 	RPAREN  reduce 22
+	RBRACE  reduce 22
 	SEMICOLON  reduce 22
 	ARROW  reduce 22
 	COMMA  reduce 22
 	POINT  reduce 22
 	TOF  reduce 22
+	INT_KW  reduce 22
+	FLOAT_KW  reduce 22
 
 
 state 54
@@ -919,10 +929,19 @@ state 59
 	STRING  reduce 111
 	INT16  reduce 111
 	FLOAT32  reduce 111
+	IF  reduce 111
+	PRINT  reduce 111
+	RETURN  reduce 111
+	VAR  reduce 111
+	FOR  reduce 111
+	LPAREN  reduce 111
 	RPAREN  reduce 111
+	RBRACE  reduce 111
 	SEMICOLON  reduce 111
 	COMMA  reduce 111
 	TOF  reduce 111
+	INT_KW  reduce 111
+	FLOAT_KW  reduce 111
 
 
 state 60
@@ -939,6 +958,11 @@ state 60
 	STRING  reduce 114
 	INT16  reduce 114
 	FLOAT32  reduce 114
+	IF  reduce 114
+	PRINT  reduce 114
+	RETURN  reduce 114
+	VAR  reduce 114
+	FOR  reduce 114
 	PLUS  reduce 114
 	MINUS  reduce 114
 	EQ  reduce 114
@@ -947,11 +971,15 @@ state 60
 	LE_OP  reduce 114
 	GT  reduce 114
 	GE  reduce 114
+	LPAREN  reduce 114
 	RPAREN  reduce 114
+	RBRACE  reduce 114
 	SEMICOLON  reduce 114
 	ARROW  reduce 114
 	COMMA  reduce 114
 	TOF  reduce 114
+	INT_KW  reduce 114
+	FLOAT_KW  reduce 114
 
 
 state 61
@@ -982,6 +1010,11 @@ state 64
 	STRING  reduce 124
 	INT16  reduce 124
 	FLOAT32  reduce 124
+	IF  reduce 124
+	PRINT  reduce 124
+	RETURN  reduce 124
+	VAR  reduce 124
+	FOR  reduce 124
 	TO  reduce 124
 	PLUS  reduce 124
 	MINUS  reduce 124
@@ -993,11 +1026,15 @@ state 64
 	LE_OP  reduce 124
 	GT  reduce 124
 	GE  reduce 124
+	LPAREN  reduce 124
 	RPAREN  reduce 124
+	RBRACE  reduce 124
 	SEMICOLON  reduce 124
 	ARROW  reduce 124
 	COMMA  reduce 124
 	TOF  reduce 124
+	INT_KW  reduce 124
+	FLOAT_KW  reduce 124
 
 
 state 65
@@ -1114,7 +1151,7 @@ state 73
 
 state 74
 	asignacion : identificador_destino ASSIGN_COLON . expresion SEMICOLON  (107)
-	asignacion : identificador_destino ASSIGN_COLON . expresion error  (109)
+	asignacion : identificador_destino ASSIGN_COLON . expresion  (109)
 
 	ID  shift 53
 	STRING  shift 54
@@ -1161,7 +1198,7 @@ state 76
 
 state 77
 	asignacion : lista_variables_destino ASSIGN . lista_expresiones SEMICOLON  (108)
-	asignacion : lista_variables_destino ASSIGN . lista_expresiones error  (110)
+	asignacion : lista_variables_destino ASSIGN . lista_expresiones  (110)
 
 	ID  shift 53
 	STRING  shift 54
@@ -1538,10 +1575,19 @@ state 101
 	STRING  reduce 113
 	INT16  reduce 113
 	FLOAT32  reduce 113
+	IF  reduce 113
+	PRINT  reduce 113
+	RETURN  reduce 113
+	VAR  reduce 113
+	FOR  reduce 113
+	LPAREN  reduce 113
 	RPAREN  reduce 113
+	RBRACE  reduce 113
 	SEMICOLON  reduce 113
 	COMMA  reduce 113
 	TOF  reduce 113
+	INT_KW  reduce 113
+	FLOAT_KW  reduce 113
 
 
 state 102
@@ -1655,17 +1701,26 @@ state 112
 
 state 113
 	asignacion : identificador_destino ASSIGN_COLON expresion . SEMICOLON  (107)
-	asignacion : identificador_destino ASSIGN_COLON expresion . error  (109)
+	asignacion : identificador_destino ASSIGN_COLON expresion .  (109)
 	expresion : expresion . PLUS termino  (115)
 	expresion : expresion . PLUS error  (116)
 	expresion : expresion . MINUS termino  (117)
 	expresion : expresion . MINUS error  (118)
 
-	error  shift 170
 	PLUS  shift 95
 	MINUS  shift 96
-	SEMICOLON  shift 171
-	.  error
+	SEMICOLON  shift 170
+	error  reduce 109
+	ID  reduce 109
+	IF  reduce 109
+	PRINT  reduce 109
+	RETURN  reduce 109
+	VAR  reduce 109
+	FOR  reduce 109
+	LPAREN  reduce 109
+	RBRACE  reduce 109
+	INT_KW  reduce 109
+	FLOAT_KW  reduce 109
 
 
 state 114
@@ -1680,14 +1735,14 @@ state 114
 
 	parametro_formal  goto 119
 	tipo  goto 120
-	parametros_formales  goto 172
+	parametros_formales  goto 171
 	sem_pasaje  goto 122
 
 
 state 115
 	declaracion_funcion : inicio_funcion LPAREN error . RPAREN LBRACE lista_sentencias_sin_return sentencia_return lista_sentencias RBRACE  (36)
 
-	RPAREN  shift 173
+	RPAREN  shift 172
 	.  error
 
 
@@ -1701,8 +1756,8 @@ state 117
 	sem_pasaje : CV . LE_KW  (52)
 	sem_pasaje : CV . error  (54)
 
-	error  shift 174
-	LE_KW  shift 175
+	error  shift 173
+	LE_KW  shift 174
 	.  error
 
 
@@ -1710,8 +1765,8 @@ state 118
 	sem_pasaje : CR . LE_KW  (53)
 	sem_pasaje : CR . error  (55)
 
-	error  shift 176
-	LE_KW  shift 177
+	error  shift 175
+	LE_KW  shift 176
 	.  error
 
 
@@ -1724,7 +1779,7 @@ state 119
 state 120
 	parametro_formal : tipo . ID  (48)
 
-	ID  shift 178
+	ID  shift 177
 	.  error
 
 
@@ -1735,9 +1790,9 @@ state 121
 	parametros_formales : parametros_formales . error parametro_formal  (46)
 	parametros_formales : parametros_formales . COMMA parametro_formal  (47)
 
-	error  shift 179
-	RPAREN  shift 180
-	COMMA  shift 181
+	error  shift 178
+	RPAREN  shift 179
+	COMMA  shift 180
 	.  error
 
 
@@ -1745,29 +1800,38 @@ state 122
 	parametro_formal : sem_pasaje . tipo ID  (49)
 	parametro_formal : sem_pasaje . ID  (50)
 
-	ID  shift 182
+	ID  shift 181
 	INT_KW  shift 24
 	FLOAT_KW  shift 25
 	.  error
 
-	tipo  goto 183
+	tipo  goto 182
 
 
+123: shift/reduce conflict (shift 53, reduce 110) on ID
 state 123
 	asignacion : lista_variables_destino ASSIGN lista_expresiones . SEMICOLON  (108)
-	asignacion : lista_variables_destino ASSIGN lista_expresiones . error  (110)
+	asignacion : lista_variables_destino ASSIGN lista_expresiones .  (110)
 	lista_expresiones : lista_expresiones . COMMA expresion  (112)
 	lista_expresiones : lista_expresiones . expresion  (113)
 
-	error  shift 184
 	ID  shift 53
 	STRING  shift 54
 	INT16  shift 55
 	FLOAT32  shift 56
-	SEMICOLON  shift 185
+	SEMICOLON  shift 183
 	COMMA  shift 100
 	TOF  shift 58
-	.  error
+	error  reduce 110
+	IF  reduce 110
+	PRINT  reduce 110
+	RETURN  reduce 110
+	VAR  reduce 110
+	FOR  reduce 110
+	LPAREN  reduce 110
+	RBRACE  reduce 110
+	INT_KW  reduce 110
+	FLOAT_KW  reduce 110
 
 	identificador  goto 26
 	expresion  goto 101
@@ -1789,9 +1853,9 @@ state 125
 	parametros_formales : parametros_formales . error parametro_formal  (46)
 	parametros_formales : parametros_formales . COMMA parametro_formal  (47)
 
-	error  shift 186
-	RPAREN  shift 187
-	COMMA  shift 181
+	error  shift 184
+	RPAREN  shift 185
+	COMMA  shift 180
 	.  error
 
 
@@ -1804,14 +1868,14 @@ state 126
 state 127
 	if_simple : IF . LPAREN condicion RPAREN sentencia_ejecutable  (86)
 
-	LPAREN  shift 188
+	LPAREN  shift 186
 	.  error
 
 
 state 128
 	lambda_expresion : lambda_prefix error if_simple . RBRACE LPAREN lambda_argumento RPAREN  (140)
 
-	RBRACE  shift 189
+	RBRACE  shift 187
 	.  error
 
 
@@ -1820,8 +1884,8 @@ state 129
 	lambda_expresion : lambda_prefix LBRACE if_simple . error LPAREN lambda_argumento RPAREN  (141)
 	lambda_expresion : lambda_prefix LBRACE if_simple . RBRACE LPAREN lambda_argumento error  (142)
 
-	error  shift 190
-	RBRACE  shift 191
+	error  shift 188
+	RBRACE  shift 189
 	.  error
 
 
@@ -1872,7 +1936,7 @@ state 136
 	.  error
 
 	identificador  goto 26
-	expresion  goto 192
+	expresion  goto 190
 	termino  goto 60
 	factor  goto 61
 	conversion_tof  goto 62
@@ -1897,7 +1961,7 @@ state 138
 	condicion : expresion operador_comparacion . expresion  (97)
 	condicion : expresion operador_comparacion . error  (100)
 
-	error  shift 193
+	error  shift 191
 	ID  shift 53
 	STRING  shift 54
 	INT16  shift 55
@@ -1906,7 +1970,7 @@ state 138
 	.  error
 
 	identificador  goto 26
-	expresion  goto 194
+	expresion  goto 192
 	termino  goto 60
 	factor  goto 61
 	conversion_tof  goto 62
@@ -1917,19 +1981,19 @@ state 138
 state 139
 	sentencia_if : IF error condicion RPAREN . bloque_sentencias_ejecutables resto_if  (83)
 
-	LBRACE  shift 195
+	LBRACE  shift 193
 	.  error
 
-	bloque_sentencias_ejecutables  goto 196
+	bloque_sentencias_ejecutables  goto 194
 
 
 state 140
 	sentencia_if : IF LPAREN condicion error . bloque_sentencias_ejecutables resto_if  (84)
 
-	LBRACE  shift 195
+	LBRACE  shift 193
 	.  error
 
-	bloque_sentencias_ejecutables  goto 197
+	bloque_sentencias_ejecutables  goto 195
 
 
 state 141
@@ -1937,16 +2001,16 @@ state 141
 	sentencia_if : IF LPAREN condicion RPAREN . error resto_if  (85)
 	$$2 : .  (81)
 
-	error  shift 198
+	error  shift 196
 	LBRACE  reduce 81
 
-	$$2  goto 199
+	$$2  goto 197
 
 
 state 142
 	sentencia_print : PRINT LPAREN error RPAREN . SEMICOLON  (71)
 
-	SEMICOLON  shift 200
+	SEMICOLON  shift 198
 	.  error
 
 
@@ -1954,8 +2018,8 @@ state 143
 	sentencia_print : PRINT LPAREN expresion RPAREN . SEMICOLON  (70)
 	sentencia_print : PRINT LPAREN expresion RPAREN . error  (72)
 
-	error  shift 201
-	SEMICOLON  shift 202
+	error  shift 199
+	SEMICOLON  shift 200
 	.  error
 
 
@@ -1967,10 +2031,10 @@ state 144
 	parametro_real : expresion . ARROW ID  (136)
 	parametro_real : expresion . error  (137)
 
-	error  shift 203
+	error  shift 201
 	PLUS  shift 95
 	MINUS  shift 96
-	ARROW  shift 204
+	ARROW  shift 202
 	.  error
 
 
@@ -1978,8 +2042,8 @@ state 145
 	invocacion_funcion : ID LPAREN parametros_reales . RPAREN  (130)
 	parametros_reales : parametros_reales . COMMA parametro_real  (135)
 
-	RPAREN  shift 205
-	COMMA  shift 206
+	RPAREN  shift 203
+	COMMA  shift 204
 	.  error
 
 
@@ -1992,14 +2056,14 @@ state 146
 state 147
 	sentencia_return : RETURN LPAREN lista_expresiones error . SEMICOLON  (58)
 
-	SEMICOLON  shift 207
+	SEMICOLON  shift 205
 	.  error
 
 
 state 148
 	sentencia_return : RETURN LPAREN lista_expresiones RPAREN . SEMICOLON  (56)
 
-	SEMICOLON  shift 208
+	SEMICOLON  shift 206
 	.  error
 
 
@@ -2012,7 +2076,7 @@ state 149
 
 	PLUS  shift 95
 	MINUS  shift 96
-	RPAREN  shift 209
+	RPAREN  shift 207
 	.  error
 
 
@@ -2024,10 +2088,10 @@ state 150
 	conversion_tof : TOF LPAREN expresion . RPAREN  (131)
 	conversion_tof : TOF LPAREN expresion . error  (133)
 
-	error  shift 210
+	error  shift 208
 	PLUS  shift 95
 	MINUS  shift 96
-	RPAREN  shift 211
+	RPAREN  shift 209
 	.  error
 
 
@@ -2051,6 +2115,11 @@ state 152
 	STRING  reduce 115
 	INT16  reduce 115
 	FLOAT32  reduce 115
+	IF  reduce 115
+	PRINT  reduce 115
+	RETURN  reduce 115
+	VAR  reduce 115
+	FOR  reduce 115
 	PLUS  reduce 115
 	MINUS  reduce 115
 	EQ  reduce 115
@@ -2059,11 +2128,15 @@ state 152
 	LE_OP  reduce 115
 	GT  reduce 115
 	GE  reduce 115
+	LPAREN  reduce 115
 	RPAREN  reduce 115
+	RBRACE  reduce 115
 	SEMICOLON  reduce 115
 	ARROW  reduce 115
 	COMMA  reduce 115
 	TOF  reduce 115
+	INT_KW  reduce 115
+	FLOAT_KW  reduce 115
 
 
 state 153
@@ -2086,6 +2159,11 @@ state 154
 	STRING  reduce 117
 	INT16  reduce 117
 	FLOAT32  reduce 117
+	IF  reduce 117
+	PRINT  reduce 117
+	RETURN  reduce 117
+	VAR  reduce 117
+	FOR  reduce 117
 	PLUS  reduce 117
 	MINUS  reduce 117
 	EQ  reduce 117
@@ -2094,11 +2172,15 @@ state 154
 	LE_OP  reduce 117
 	GT  reduce 117
 	GE  reduce 117
+	LPAREN  reduce 117
 	RPAREN  reduce 117
+	RBRACE  reduce 117
 	SEMICOLON  reduce 117
 	ARROW  reduce 117
 	COMMA  reduce 117
 	TOF  reduce 117
+	INT_KW  reduce 117
+	FLOAT_KW  reduce 117
 
 
 state 155
@@ -2145,10 +2227,19 @@ state 160
 	STRING  reduce 112
 	INT16  reduce 112
 	FLOAT32  reduce 112
+	IF  reduce 112
+	PRINT  reduce 112
+	RETURN  reduce 112
+	VAR  reduce 112
+	FOR  reduce 112
+	LPAREN  reduce 112
 	RPAREN  reduce 112
+	RBRACE  reduce 112
 	SEMICOLON  reduce 112
 	COMMA  reduce 112
 	TOF  reduce 112
+	INT_KW  reduce 112
+	FLOAT_KW  reduce 112
 
 
 state 161
@@ -2173,7 +2264,7 @@ state 162
 	.  error
 
 	identificador  goto 26
-	factor  goto 212
+	factor  goto 210
 	conversion_tof  goto 62
 	invocacion_funcion  goto 63
 	identificador_completo  goto 64
@@ -2190,7 +2281,7 @@ state 163
 	.  error
 
 	identificador  goto 26
-	factor  goto 213
+	factor  goto 211
 	conversion_tof  goto 62
 	invocacion_funcion  goto 63
 	identificador_completo  goto 64
@@ -2207,7 +2298,7 @@ state 164
 	.  error
 
 	identificador  goto 26
-	factor  goto 214
+	factor  goto 212
 	conversion_tof  goto 62
 	invocacion_funcion  goto 63
 	identificador_completo  goto 64
@@ -2220,7 +2311,7 @@ state 165
 	sentencia_for : FOR LPAREN identificador_destino FROM . factor TO error RPAREN bloque_sentencias_ejecutables SEMICOLON  (94)
 	sentencia_for : FOR LPAREN identificador_destino FROM . factor TO factor error bloque_sentencias_ejecutables SEMICOLON  (95)
 
-	error  shift 215
+	error  shift 213
 	ID  shift 53
 	STRING  shift 54
 	INT16  shift 55
@@ -2229,7 +2320,7 @@ state 165
 	.  error
 
 	identificador  goto 26
-	factor  goto 216
+	factor  goto 214
 	conversion_tof  goto 62
 	invocacion_funcion  goto 63
 	identificador_completo  goto 64
@@ -2244,14 +2335,14 @@ state 166
 state 167
 	lista_sentencias_ejecutables : lista_sentencias_ejecutables error . SEMICOLON  (75)
 
-	SEMICOLON  shift 217
+	SEMICOLON  shift 215
 	.  error
 
 
 state 168
 	sentencia_for : encabezado_for LBRACE lista_sentencias_ejecutables RBRACE . SEMICOLON  (88)
 
-	SEMICOLON  shift 218
+	SEMICOLON  shift 216
 	.  error
 
 
@@ -2262,92 +2353,86 @@ state 169
 
 
 state 170
-	asignacion : identificador_destino ASSIGN_COLON expresion error .  (109)
-
-	.  reduce 109
-
-
-state 171
 	asignacion : identificador_destino ASSIGN_COLON expresion SEMICOLON .  (107)
 
 	.  reduce 107
 
 
-state 172
+state 171
 	declaracion_funcion : inicio_funcion error LPAREN parametros_formales . RPAREN LBRACE lista_sentencias_sin_return sentencia_return lista_sentencias RBRACE  (35)
 	parametros_formales : parametros_formales . error parametro_formal  (46)
 	parametros_formales : parametros_formales . COMMA parametro_formal  (47)
 
-	error  shift 186
-	RPAREN  shift 219
-	COMMA  shift 181
+	error  shift 184
+	RPAREN  shift 217
+	COMMA  shift 180
+	.  error
+
+
+state 172
+	declaracion_funcion : inicio_funcion LPAREN error RPAREN . LBRACE lista_sentencias_sin_return sentencia_return lista_sentencias RBRACE  (36)
+
+	LBRACE  shift 218
 	.  error
 
 
 state 173
-	declaracion_funcion : inicio_funcion LPAREN error RPAREN . LBRACE lista_sentencias_sin_return sentencia_return lista_sentencias RBRACE  (36)
-
-	LBRACE  shift 220
-	.  error
-
-
-state 174
 	sem_pasaje : CV error .  (54)
 
 	.  reduce 54
 
 
-state 175
+state 174
 	sem_pasaje : CV LE_KW .  (52)
 
 	.  reduce 52
 
 
-state 176
+state 175
 	sem_pasaje : CR error .  (55)
 
 	.  reduce 55
 
 
-state 177
+state 176
 	sem_pasaje : CR LE_KW .  (53)
 
 	.  reduce 53
 
 
-state 178
+state 177
 	parametro_formal : tipo ID .  (48)
 
 	.  reduce 48
 
 
-state 179
+state 178
 	declaracion_funcion : inicio_funcion LPAREN parametros_formales error . LBRACE lista_sentencias_sin_return sentencia_return lista_sentencias RBRACE  (39)
 	parametros_formales : parametros_formales error . parametro_formal  (46)
 
 	ID  shift 116
-	LBRACE  shift 221
+	LBRACE  shift 219
 	CV  shift 117
 	CR  shift 118
 	INT_KW  shift 24
 	FLOAT_KW  shift 25
 	.  error
 
-	parametro_formal  goto 222
+	parametro_formal  goto 220
 	tipo  goto 120
 	sem_pasaje  goto 122
 
 
-state 180
+state 179
 	declaracion_funcion : inicio_funcion LPAREN parametros_formales RPAREN . LBRACE lista_sentencias_sin_return sentencia_return lista_sentencias RBRACE  (34)
 	declaracion_funcion : inicio_funcion LPAREN parametros_formales RPAREN . error lista_sentencias_sin_return sentencia_return lista_sentencias RBRACE  (37)
 
-	error  shift 223
-	LBRACE  shift 224
+	error  shift 221
+	LBRACE  shift 222
 	.  error
 
 
-state 181
+state 180
 	parametros_formales : parametros_formales COMMA . parametro_formal  (47)
 
 	ID  shift 116
@@ -2357,37 +2442,31 @@ state 181
 	FLOAT_KW  shift 25
 	.  error
 
-	parametro_formal  goto 225
+	parametro_formal  goto 223
 	tipo  goto 120
 	sem_pasaje  goto 122
 
 
-state 182
+state 181
 	parametro_formal : sem_pasaje ID .  (50)
 
 	.  reduce 50
 
 
-state 183
+state 182
 	parametro_formal : sem_pasaje tipo . ID  (49)
 
-	ID  shift 226
+	ID  shift 224
 	.  error
 
 
-state 184
-	asignacion : lista_variables_destino ASSIGN lista_expresiones error .  (110)
-
-	.  reduce 110
-
-
-state 185
+state 183
 	asignacion : lista_variables_destino ASSIGN lista_expresiones SEMICOLON .  (108)
 
 	.  reduce 108
 
 
-state 186
+state 184
 	parametros_formales : parametros_formales error . parametro_formal  (46)
 
 	ID  shift 116
@@ -2397,19 +2476,19 @@ state 186
 	FLOAT_KW  shift 25
 	.  error
 
-	parametro_formal  goto 222
+	parametro_formal  goto 220
 	tipo  goto 120
 	sem_pasaje  goto 122
 
 
-state 187
+state 185
 	declaracion_funcion : lista_tipos LPAREN parametros_formales RPAREN . LBRACE lista_sentencias_sin_return sentencia_return lista_sentencias error  (38)
 
-	LBRACE  shift 227
+	LBRACE  shift 225
 	.  error
 
 
-state 188
+state 186
 	if_simple : IF LPAREN . condicion RPAREN sentencia_ejecutable  (86)
 
 	error  shift 85
@@ -2426,33 +2505,33 @@ state 188
 	factor  goto 61
 	conversion_tof  goto 62
 	invocacion_funcion  goto 63
-	condicion  goto 228
+	condicion  goto 226
 	identificador_completo  goto 64
 
 
-state 189
+state 187
 	lambda_expresion : lambda_prefix error if_simple RBRACE . LPAREN lambda_argumento RPAREN  (140)
+
+	LPAREN  shift 227
+	.  error
+
+
+state 188
+	lambda_expresion : lambda_prefix LBRACE if_simple error . LPAREN lambda_argumento RPAREN  (141)
+
+	LPAREN  shift 228
+	.  error
+
+
+state 189
+	lambda_expresion : lambda_prefix LBRACE if_simple RBRACE . LPAREN lambda_argumento RPAREN  (139)
+	lambda_expresion : lambda_prefix LBRACE if_simple RBRACE . LPAREN lambda_argumento error  (142)
 
 	LPAREN  shift 229
 	.  error
 
 
 state 190
-	lambda_expresion : lambda_prefix LBRACE if_simple error . LPAREN lambda_argumento RPAREN  (141)
-
-	LPAREN  shift 230
-	.  error
-
-
-state 191
-	lambda_expresion : lambda_prefix LBRACE if_simple RBRACE . LPAREN lambda_argumento RPAREN  (139)
-	lambda_expresion : lambda_prefix LBRACE if_simple RBRACE . LPAREN lambda_argumento error  (142)
-
-	LPAREN  shift 231
-	.  error
-
-
-state 192
 	condicion : error operador_comparacion expresion .  (99)
 	expresion : expresion . PLUS termino  (115)
 	expresion : expresion . PLUS error  (116)
@@ -2465,13 +2544,13 @@ state 192
 	RPAREN  reduce 99
 
 
-state 193
+state 191
 	condicion : expresion operador_comparacion error .  (100)
 
 	.  reduce 100
 
 
-state 194
+state 192
 	condicion : expresion operador_comparacion expresion .  (97)
 	expresion : expresion . PLUS termino  (115)
 	expresion : expresion . PLUS error  (116)
@@ -2484,95 +2563,95 @@ state 194
 	RPAREN  reduce 97
 
 
-state 195
+state 193
 	bloque_sentencias_ejecutables : LBRACE . lista_sentencias_ejecutables RBRACE  (76)
 	lista_sentencias_ejecutables : .  (73)
 
 	.  reduce 73
 
-	lista_sentencias_ejecutables  goto 232
+	lista_sentencias_ejecutables  goto 230
+
+
+state 194
+	sentencia_if : IF error condicion RPAREN bloque_sentencias_ejecutables . resto_if  (83)
+
+	error  shift 231
+	ELSE  shift 232
+	ENDIF  shift 233
+	.  error
+
+	resto_if  goto 234
+
+
+state 195
+	sentencia_if : IF LPAREN condicion error bloque_sentencias_ejecutables . resto_if  (84)
+
+	error  shift 231
+	ELSE  shift 232
+	ENDIF  shift 233
+	.  error
+
+	resto_if  goto 235
 
 
 state 196
-	sentencia_if : IF error condicion RPAREN bloque_sentencias_ejecutables . resto_if  (83)
+	sentencia_if : IF LPAREN condicion RPAREN error . resto_if  (85)
 
-	error  shift 233
-	ELSE  shift 234
-	ENDIF  shift 235
+	error  shift 231
+	ELSE  shift 232
+	ENDIF  shift 233
 	.  error
 
 	resto_if  goto 236
 
 
 state 197
-	sentencia_if : IF LPAREN condicion error bloque_sentencias_ejecutables . resto_if  (84)
+	sentencia_if : IF LPAREN condicion RPAREN $$2 . bloque_sentencias_ejecutables resto_if  (82)
 
-	error  shift 233
-	ELSE  shift 234
-	ENDIF  shift 235
+	LBRACE  shift 193
 	.  error
 
-	resto_if  goto 237
+	bloque_sentencias_ejecutables  goto 237
 
 
 state 198
-	sentencia_if : IF LPAREN condicion RPAREN error . resto_if  (85)
-
-	error  shift 233
-	ELSE  shift 234
-	ENDIF  shift 235
-	.  error
-
-	resto_if  goto 238
-
-
-state 199
-	sentencia_if : IF LPAREN condicion RPAREN $$2 . bloque_sentencias_ejecutables resto_if  (82)
-
-	LBRACE  shift 195
-	.  error
-
-	bloque_sentencias_ejecutables  goto 239
-
-
-state 200
 	sentencia_print : PRINT LPAREN error RPAREN SEMICOLON .  (71)
 
 	.  reduce 71
 
 
-state 201
+state 199
 	sentencia_print : PRINT LPAREN expresion RPAREN error .  (72)
 
 	.  reduce 72
 
 
-state 202
+state 200
 	sentencia_print : PRINT LPAREN expresion RPAREN SEMICOLON .  (70)
 
 	.  reduce 70
 
 
-state 203
+state 201
 	parametro_real : expresion error .  (137)
 
 	.  reduce 137
 
 
-state 204
+state 202
 	parametro_real : expresion ARROW . ID  (136)
 
-	ID  shift 240
+	ID  shift 238
 	.  error
 
 
-state 205
+state 203
 	invocacion_funcion : ID LPAREN parametros_reales RPAREN .  (130)
 
 	.  reduce 130
 
 
-state 206
+state 204
 	parametros_reales : parametros_reales COMMA . parametro_real  (135)
 
 	ID  shift 53
@@ -2589,99 +2668,123 @@ state 206
 	conversion_tof  goto 62
 	invocacion_funcion  goto 63
 	identificador_completo  goto 64
-	parametro_real  goto 241
+	parametro_real  goto 239
 
 
-state 207
+state 205
 	sentencia_return : RETURN LPAREN lista_expresiones error SEMICOLON .  (58)
 
 	.  reduce 58
 
 
-state 208
+state 206
 	sentencia_return : RETURN LPAREN lista_expresiones RPAREN SEMICOLON .  (56)
 
 	.  reduce 56
 
 
-state 209
+state 207
 	conversion_tof : TOF error expresion RPAREN .  (132)
 
 	.  reduce 132
 
 
-state 210
+state 208
 	conversion_tof : TOF LPAREN expresion error .  (133)
 
 	.  reduce 133
 
 
-state 211
+state 209
 	conversion_tof : TOF LPAREN expresion RPAREN .  (131)
 
 	.  reduce 131
 
 
-state 212
+state 210
 	sentencia_for : FOR error identificador_destino FROM factor . TO factor RPAREN bloque_sentencias_ejecutables SEMICOLON  (89)
+
+	TO  shift 240
+	.  error
+
+
+state 211
+	sentencia_for : FOR LPAREN error FROM factor . TO factor RPAREN bloque_sentencias_ejecutables SEMICOLON  (90)
+
+	TO  shift 241
+	.  error
+
+
+state 212
+	sentencia_for : FOR LPAREN identificador_destino error factor . TO factor RPAREN bloque_sentencias_ejecutables SEMICOLON  (91)
 
 	TO  shift 242
 	.  error
 
 
 state 213
-	sentencia_for : FOR LPAREN error FROM factor . TO factor RPAREN bloque_sentencias_ejecutables SEMICOLON  (90)
+	sentencia_for : FOR LPAREN identificador_destino FROM error . TO factor RPAREN bloque_sentencias_ejecutables SEMICOLON  (92)
 
 	TO  shift 243
 	.  error
 
 
 state 214
-	sentencia_for : FOR LPAREN identificador_destino error factor . TO factor RPAREN bloque_sentencias_ejecutables SEMICOLON  (91)
-
-	TO  shift 244
-	.  error
-
-
-state 215
-	sentencia_for : FOR LPAREN identificador_destino FROM error . TO factor RPAREN bloque_sentencias_ejecutables SEMICOLON  (92)
-
-	TO  shift 245
-	.  error
-
-
-state 216
 	encabezado_for : FOR LPAREN identificador_destino FROM factor . TO factor RPAREN  (87)
 	sentencia_for : FOR LPAREN identificador_destino FROM factor . error factor RPAREN bloque_sentencias_ejecutables SEMICOLON  (93)
 	sentencia_for : FOR LPAREN identificador_destino FROM factor . TO error RPAREN bloque_sentencias_ejecutables SEMICOLON  (94)
 	sentencia_for : FOR LPAREN identificador_destino FROM factor . TO factor error bloque_sentencias_ejecutables SEMICOLON  (95)
 
-	error  shift 246
-	TO  shift 247
+	error  shift 244
+	TO  shift 245
 	.  error
 
 
-state 217
+state 215
 	lista_sentencias_ejecutables : lista_sentencias_ejecutables error SEMICOLON .  (75)
 
 	.  reduce 75
 
 
-state 218
+state 216
 	sentencia_for : encabezado_for LBRACE lista_sentencias_ejecutables RBRACE SEMICOLON .  (88)
 
 	.  reduce 88
 
 
-state 219
+state 217
 	declaracion_funcion : inicio_funcion error LPAREN parametros_formales RPAREN . LBRACE lista_sentencias_sin_return sentencia_return lista_sentencias RBRACE  (35)
 
-	LBRACE  shift 248
+	LBRACE  shift 246
 	.  error
 
 
-state 220
+state 218
 	declaracion_funcion : inicio_funcion LPAREN error RPAREN LBRACE . lista_sentencias_sin_return sentencia_return lista_sentencias RBRACE  (36)
+	lista_sentencias_sin_return : .  (13)
+
+	.  reduce 13
+
+	lista_sentencias_sin_return  goto 247
+
+
+state 219
+	declaracion_funcion : inicio_funcion LPAREN parametros_formales error LBRACE . lista_sentencias_sin_return sentencia_return lista_sentencias RBRACE  (39)
+	lista_sentencias_sin_return : .  (13)
+
+	.  reduce 13
+
+	lista_sentencias_sin_return  goto 248
+
+
+state 220
+	parametros_formales : parametros_formales error parametro_formal .  (46)
+
+	.  reduce 46
+
+
+state 221
+	declaracion_funcion : inicio_funcion LPAREN parametros_formales RPAREN error . lista_sentencias_sin_return sentencia_return lista_sentencias RBRACE  (37)
 	lista_sentencias_sin_return : .  (13)
 
 	.  reduce 13
@@ -2689,8 +2792,8 @@ state 220
 	lista_sentencias_sin_return  goto 249
 
 
-state 221
-	declaracion_funcion : inicio_funcion LPAREN parametros_formales error LBRACE . lista_sentencias_sin_return sentencia_return lista_sentencias RBRACE  (39)
+state 222
+	declaracion_funcion : inicio_funcion LPAREN parametros_formales RPAREN LBRACE . lista_sentencias_sin_return sentencia_return lista_sentencias RBRACE  (34)
 	lista_sentencias_sin_return : .  (13)
 
 	.  reduce 13
@@ -2698,14 +2801,20 @@ state 221
 	lista_sentencias_sin_return  goto 250
 
 
-state 222
-	parametros_formales : parametros_formales error parametro_formal .  (46)
-
-	.  reduce 46
-
-
 state 223
-	declaracion_funcion : inicio_funcion LPAREN parametros_formales RPAREN error . lista_sentencias_sin_return sentencia_return lista_sentencias RBRACE  (37)
+	parametros_formales : parametros_formales COMMA parametro_formal .  (47)
+
+	.  reduce 47
+
+
+state 224
+	parametro_formal : sem_pasaje tipo ID .  (49)
+
+	.  reduce 49
+
+
+state 225
+	declaracion_funcion : lista_tipos LPAREN parametros_formales RPAREN LBRACE . lista_sentencias_sin_return sentencia_return lista_sentencias error  (38)
 	lista_sentencias_sin_return : .  (13)
 
 	.  reduce 13
@@ -2713,78 +2822,48 @@ state 223
 	lista_sentencias_sin_return  goto 251
 
 
-state 224
-	declaracion_funcion : inicio_funcion LPAREN parametros_formales RPAREN LBRACE . lista_sentencias_sin_return sentencia_return lista_sentencias RBRACE  (34)
-	lista_sentencias_sin_return : .  (13)
-
-	.  reduce 13
-
-	lista_sentencias_sin_return  goto 252
-
-
-state 225
-	parametros_formales : parametros_formales COMMA parametro_formal .  (47)
-
-	.  reduce 47
-
-
 state 226
-	parametro_formal : sem_pasaje tipo ID .  (49)
-
-	.  reduce 49
-
-
-state 227
-	declaracion_funcion : lista_tipos LPAREN parametros_formales RPAREN LBRACE . lista_sentencias_sin_return sentencia_return lista_sentencias error  (38)
-	lista_sentencias_sin_return : .  (13)
-
-	.  reduce 13
-
-	lista_sentencias_sin_return  goto 253
-
-
-state 228
 	if_simple : IF LPAREN condicion . RPAREN sentencia_ejecutable  (86)
 
-	RPAREN  shift 254
+	RPAREN  shift 252
 	.  error
 
 
-state 229
+state 227
 	lambda_expresion : lambda_prefix error if_simple RBRACE LPAREN . lambda_argumento RPAREN  (140)
 
-	ID  shift 255
-	INT16  shift 256
-	FLOAT32  shift 257
+	ID  shift 253
+	INT16  shift 254
+	FLOAT32  shift 255
+	.  error
+
+	lambda_argumento  goto 256
+
+
+state 228
+	lambda_expresion : lambda_prefix LBRACE if_simple error LPAREN . lambda_argumento RPAREN  (141)
+
+	ID  shift 253
+	INT16  shift 254
+	FLOAT32  shift 255
+	.  error
+
+	lambda_argumento  goto 257
+
+
+state 229
+	lambda_expresion : lambda_prefix LBRACE if_simple RBRACE LPAREN . lambda_argumento RPAREN  (139)
+	lambda_expresion : lambda_prefix LBRACE if_simple RBRACE LPAREN . lambda_argumento error  (142)
+
+	ID  shift 253
+	INT16  shift 254
+	FLOAT32  shift 255
 	.  error
 
 	lambda_argumento  goto 258
 
 
 state 230
-	lambda_expresion : lambda_prefix LBRACE if_simple error LPAREN . lambda_argumento RPAREN  (141)
-
-	ID  shift 255
-	INT16  shift 256
-	FLOAT32  shift 257
-	.  error
-
-	lambda_argumento  goto 259
-
-
-state 231
-	lambda_expresion : lambda_prefix LBRACE if_simple RBRACE LPAREN . lambda_argumento RPAREN  (139)
-	lambda_expresion : lambda_prefix LBRACE if_simple RBRACE LPAREN . lambda_argumento error  (142)
-
-	ID  shift 255
-	INT16  shift 256
-	FLOAT32  shift 257
-	.  error
-
-	lambda_argumento  goto 260
-
-
-state 232
 	lista_sentencias_ejecutables : lista_sentencias_ejecutables . sentencia_ejecutable  (74)
 	lista_sentencias_ejecutables : lista_sentencias_ejecutables . error SEMICOLON  (75)
 	bloque_sentencias_ejecutables : LBRACE lista_sentencias_ejecutables . RBRACE  (76)
@@ -2796,7 +2875,7 @@ state 232
 	RETURN  shift 20
 	FOR  shift 22
 	LPAREN  shift 23
-	RBRACE  shift 261
+	RBRACE  shift 259
 	.  error
 
 	identificador  goto 26
@@ -2814,71 +2893,105 @@ state 232
 	sentencia_for  goto 44
 
 
-state 233
+state 231
 	resto_if : error .  (80)
 
 	.  reduce 80
 
 
-state 234
+state 232
 	resto_if : ELSE . $$1 bloque_sentencias_ejecutables ENDIF SEMICOLON  (79)
 	$$1 : .  (78)
 
 	.  reduce 78
 
-	$$1  goto 262
+	$$1  goto 260
 
 
-state 235
+state 233
 	resto_if : ENDIF . SEMICOLON  (77)
 
-	SEMICOLON  shift 263
+	SEMICOLON  shift 261
 	.  error
 
 
-state 236
+state 234
 	sentencia_if : IF error condicion RPAREN bloque_sentencias_ejecutables resto_if .  (83)
 
 	.  reduce 83
 
 
-state 237
+state 235
 	sentencia_if : IF LPAREN condicion error bloque_sentencias_ejecutables resto_if .  (84)
 
 	.  reduce 84
 
 
-state 238
+state 236
 	sentencia_if : IF LPAREN condicion RPAREN error resto_if .  (85)
 
 	.  reduce 85
 
 
-state 239
+state 237
 	sentencia_if : IF LPAREN condicion RPAREN $$2 bloque_sentencias_ejecutables . resto_if  (82)
 
-	error  shift 233
-	ELSE  shift 234
-	ENDIF  shift 235
+	error  shift 231
+	ELSE  shift 232
+	ENDIF  shift 233
 	.  error
 
-	resto_if  goto 264
+	resto_if  goto 262
 
 
-state 240
+state 238
 	parametro_real : expresion ARROW ID .  (136)
 
 	.  reduce 136
 
 
-state 241
+state 239
 	parametros_reales : parametros_reales COMMA parametro_real .  (135)
 
 	.  reduce 135
 
 
-state 242
+state 240
 	sentencia_for : FOR error identificador_destino FROM factor TO . factor RPAREN bloque_sentencias_ejecutables SEMICOLON  (89)
+
+	ID  shift 53
+	STRING  shift 54
+	INT16  shift 55
+	FLOAT32  shift 56
+	TOF  shift 58
+	.  error
+
+	identificador  goto 26
+	factor  goto 263
+	conversion_tof  goto 62
+	invocacion_funcion  goto 63
+	identificador_completo  goto 64
+
+
+state 241
+	sentencia_for : FOR LPAREN error FROM factor TO . factor RPAREN bloque_sentencias_ejecutables SEMICOLON  (90)
+
+	ID  shift 53
+	STRING  shift 54
+	INT16  shift 55
+	FLOAT32  shift 56
+	TOF  shift 58
+	.  error
+
+	identificador  goto 26
+	factor  goto 264
+	conversion_tof  goto 62
+	invocacion_funcion  goto 63
+	identificador_completo  goto 64
+
+
+state 242
+	sentencia_for : FOR LPAREN identificador_destino error factor TO . factor RPAREN bloque_sentencias_ejecutables SEMICOLON  (91)
 
 	ID  shift 53
 	STRING  shift 54
@@ -2895,7 +3008,7 @@ state 242
 
 
 state 243
-	sentencia_for : FOR LPAREN error FROM factor TO . factor RPAREN bloque_sentencias_ejecutables SEMICOLON  (90)
+	sentencia_for : FOR LPAREN identificador_destino FROM error TO . factor RPAREN bloque_sentencias_ejecutables SEMICOLON  (92)
 
 	ID  shift 53
 	STRING  shift 54
@@ -2912,7 +3025,7 @@ state 243
 
 
 state 244
-	sentencia_for : FOR LPAREN identificador_destino error factor TO . factor RPAREN bloque_sentencias_ejecutables SEMICOLON  (91)
+	sentencia_for : FOR LPAREN identificador_destino FROM factor error . factor RPAREN bloque_sentencias_ejecutables SEMICOLON  (93)
 
 	ID  shift 53
 	STRING  shift 54
@@ -2929,25 +3042,11 @@ state 244
 
 
 state 245
-	sentencia_for : FOR LPAREN identificador_destino FROM error TO . factor RPAREN bloque_sentencias_ejecutables SEMICOLON  (92)
+	encabezado_for : FOR LPAREN identificador_destino FROM factor TO . factor RPAREN  (87)
+	sentencia_for : FOR LPAREN identificador_destino FROM factor TO . error RPAREN bloque_sentencias_ejecutables SEMICOLON  (94)
+	sentencia_for : FOR LPAREN identificador_destino FROM factor TO . factor error bloque_sentencias_ejecutables SEMICOLON  (95)
 
-	ID  shift 53
-	STRING  shift 54
-	INT16  shift 55
-	FLOAT32  shift 56
-	TOF  shift 58
-	.  error
-
-	identificador  goto 26
-	factor  goto 268
-	conversion_tof  goto 62
-	invocacion_funcion  goto 63
-	identificador_completo  goto 64
-
-
-state 246
-	sentencia_for : FOR LPAREN identificador_destino FROM factor error . factor RPAREN bloque_sentencias_ejecutables SEMICOLON  (93)
-
+	error  shift 268
 	ID  shift 53
 	STRING  shift 54
 	INT16  shift 55
@@ -2962,42 +3061,100 @@ state 246
 	identificador_completo  goto 64
 
 
-state 247
-	encabezado_for : FOR LPAREN identificador_destino FROM factor TO . factor RPAREN  (87)
-	sentencia_for : FOR LPAREN identificador_destino FROM factor TO . error RPAREN bloque_sentencias_ejecutables SEMICOLON  (94)
-	sentencia_for : FOR LPAREN identificador_destino FROM factor TO . factor error bloque_sentencias_ejecutables SEMICOLON  (95)
-
-	error  shift 270
-	ID  shift 53
-	STRING  shift 54
-	INT16  shift 55
-	FLOAT32  shift 56
-	TOF  shift 58
-	.  error
-
-	identificador  goto 26
-	factor  goto 271
-	conversion_tof  goto 62
-	invocacion_funcion  goto 63
-	identificador_completo  goto 64
-
-
-state 248
+state 246
 	declaracion_funcion : inicio_funcion error LPAREN parametros_formales RPAREN LBRACE . lista_sentencias_sin_return sentencia_return lista_sentencias RBRACE  (35)
 	lista_sentencias_sin_return : .  (13)
 
 	.  reduce 13
 
-	lista_sentencias_sin_return  goto 272
+	lista_sentencias_sin_return  goto 270
+
+
+state 247
+	lista_sentencias_sin_return : lista_sentencias_sin_return . sentencia_declarativa  (14)
+	lista_sentencias_sin_return : lista_sentencias_sin_return . sentencia_ejecutable_sin_return  (15)
+	lista_sentencias_sin_return : lista_sentencias_sin_return . error SEMICOLON  (16)
+	declaracion_funcion : inicio_funcion LPAREN error RPAREN LBRACE lista_sentencias_sin_return . sentencia_return lista_sentencias RBRACE  (36)
+
+	error  shift 271
+	ID  shift 2
+	IF  shift 18
+	PRINT  shift 19
+	RETURN  shift 20
+	VAR  shift 21
+	FOR  shift 22
+	LPAREN  shift 23
+	INT_KW  shift 24
+	FLOAT_KW  shift 25
+	.  error
+
+	identificador  goto 26
+	encabezado_for  goto 27
+	lambda_expresion  goto 272
+	identificador_completo  goto 29
+	identificador_destino  goto 30
+	inicio_funcion  goto 31
+	tipo  goto 32
+	lista_variables_destino  goto 33
+	lista_tipos  goto 34
+	lambda_prefix  goto 35
+	sentencia_declarativa  goto 273
+	sentencia_ejecutable_sin_return  goto 274
+	declaracion_funcion  goto 38
+	declaracion_variable  goto 39
+	sentencia_return  goto 275
+	asignacion  goto 276
+	sentencia_print  goto 277
+	sentencia_if  goto 278
+	sentencia_for  goto 279
+
+
+state 248
+	lista_sentencias_sin_return : lista_sentencias_sin_return . sentencia_declarativa  (14)
+	lista_sentencias_sin_return : lista_sentencias_sin_return . sentencia_ejecutable_sin_return  (15)
+	lista_sentencias_sin_return : lista_sentencias_sin_return . error SEMICOLON  (16)
+	declaracion_funcion : inicio_funcion LPAREN parametros_formales error LBRACE lista_sentencias_sin_return . sentencia_return lista_sentencias RBRACE  (39)
+
+	error  shift 271
+	ID  shift 2
+	IF  shift 18
+	PRINT  shift 19
+	RETURN  shift 20
+	VAR  shift 21
+	FOR  shift 22
+	LPAREN  shift 23
+	INT_KW  shift 24
+	FLOAT_KW  shift 25
+	.  error
+
+	identificador  goto 26
+	encabezado_for  goto 27
+	lambda_expresion  goto 272
+	identificador_completo  goto 29
+	identificador_destino  goto 30
+	inicio_funcion  goto 31
+	tipo  goto 32
+	lista_variables_destino  goto 33
+	lista_tipos  goto 34
+	lambda_prefix  goto 35
+	sentencia_declarativa  goto 273
+	sentencia_ejecutable_sin_return  goto 274
+	declaracion_funcion  goto 38
+	declaracion_variable  goto 39
+	sentencia_return  goto 280
+	asignacion  goto 276
+	sentencia_print  goto 277
+	sentencia_if  goto 278
+	sentencia_for  goto 279
 
 
 state 249
 	lista_sentencias_sin_return : lista_sentencias_sin_return . sentencia_declarativa  (14)
 	lista_sentencias_sin_return : lista_sentencias_sin_return . sentencia_ejecutable_sin_return  (15)
 	lista_sentencias_sin_return : lista_sentencias_sin_return . error SEMICOLON  (16)
-	declaracion_funcion : inicio_funcion LPAREN error RPAREN LBRACE lista_sentencias_sin_return . sentencia_return lista_sentencias RBRACE  (36)
+	declaracion_funcion : inicio_funcion LPAREN parametros_formales RPAREN error lista_sentencias_sin_return . sentencia_return lista_sentencias RBRACE  (37)
 
-	error  shift 273
+	error  shift 271
 	ID  shift 2
 	IF  shift 18
 	PRINT  shift 19
@@ -3011,7 +3168,7 @@ state 249
 
 	identificador  goto 26
 	encabezado_for  goto 27
-	lambda_expresion  goto 274
+	lambda_expresion  goto 272
 	identificador_completo  goto 29
 	identificador_destino  goto 30
 	inicio_funcion  goto 31
@@ -3019,24 +3176,24 @@ state 249
 	lista_variables_destino  goto 33
 	lista_tipos  goto 34
 	lambda_prefix  goto 35
-	sentencia_declarativa  goto 275
-	sentencia_ejecutable_sin_return  goto 276
+	sentencia_declarativa  goto 273
+	sentencia_ejecutable_sin_return  goto 274
 	declaracion_funcion  goto 38
 	declaracion_variable  goto 39
-	sentencia_return  goto 277
-	asignacion  goto 278
-	sentencia_print  goto 279
-	sentencia_if  goto 280
-	sentencia_for  goto 281
+	sentencia_return  goto 281
+	asignacion  goto 276
+	sentencia_print  goto 277
+	sentencia_if  goto 278
+	sentencia_for  goto 279
 
 
 state 250
 	lista_sentencias_sin_return : lista_sentencias_sin_return . sentencia_declarativa  (14)
 	lista_sentencias_sin_return : lista_sentencias_sin_return . sentencia_ejecutable_sin_return  (15)
 	lista_sentencias_sin_return : lista_sentencias_sin_return . error SEMICOLON  (16)
-	declaracion_funcion : inicio_funcion LPAREN parametros_formales error LBRACE lista_sentencias_sin_return . sentencia_return lista_sentencias RBRACE  (39)
+	declaracion_funcion : inicio_funcion LPAREN parametros_formales RPAREN LBRACE lista_sentencias_sin_return . sentencia_return lista_sentencias RBRACE  (34)
 
-	error  shift 273
+	error  shift 271
 	ID  shift 2
 	IF  shift 18
 	PRINT  shift 19
@@ -3050,7 +3207,7 @@ state 250
 
 	identificador  goto 26
 	encabezado_for  goto 27
-	lambda_expresion  goto 274
+	lambda_expresion  goto 272
 	identificador_completo  goto 29
 	identificador_destino  goto 30
 	inicio_funcion  goto 31
@@ -3058,24 +3215,24 @@ state 250
 	lista_variables_destino  goto 33
 	lista_tipos  goto 34
 	lambda_prefix  goto 35
-	sentencia_declarativa  goto 275
-	sentencia_ejecutable_sin_return  goto 276
+	sentencia_declarativa  goto 273
+	sentencia_ejecutable_sin_return  goto 274
 	declaracion_funcion  goto 38
 	declaracion_variable  goto 39
 	sentencia_return  goto 282
-	asignacion  goto 278
-	sentencia_print  goto 279
-	sentencia_if  goto 280
-	sentencia_for  goto 281
+	asignacion  goto 276
+	sentencia_print  goto 277
+	sentencia_if  goto 278
+	sentencia_for  goto 279
 
 
 state 251
 	lista_sentencias_sin_return : lista_sentencias_sin_return . sentencia_declarativa  (14)
 	lista_sentencias_sin_return : lista_sentencias_sin_return . sentencia_ejecutable_sin_return  (15)
 	lista_sentencias_sin_return : lista_sentencias_sin_return . error SEMICOLON  (16)
-	declaracion_funcion : inicio_funcion LPAREN parametros_formales RPAREN error lista_sentencias_sin_return . sentencia_return lista_sentencias RBRACE  (37)
+	declaracion_funcion : lista_tipos LPAREN parametros_formales RPAREN LBRACE lista_sentencias_sin_return . sentencia_return lista_sentencias error  (38)
 
-	error  shift 273
+	error  shift 271
 	ID  shift 2
 	IF  shift 18
 	PRINT  shift 19
@@ -3089,7 +3246,7 @@ state 251
 
 	identificador  goto 26
 	encabezado_for  goto 27
-	lambda_expresion  goto 274
+	lambda_expresion  goto 272
 	identificador_completo  goto 29
 	identificador_destino  goto 30
 	inicio_funcion  goto 31
@@ -3097,96 +3254,18 @@ state 251
 	lista_variables_destino  goto 33
 	lista_tipos  goto 34
 	lambda_prefix  goto 35
-	sentencia_declarativa  goto 275
-	sentencia_ejecutable_sin_return  goto 276
+	sentencia_declarativa  goto 273
+	sentencia_ejecutable_sin_return  goto 274
 	declaracion_funcion  goto 38
 	declaracion_variable  goto 39
 	sentencia_return  goto 283
-	asignacion  goto 278
-	sentencia_print  goto 279
-	sentencia_if  goto 280
-	sentencia_for  goto 281
+	asignacion  goto 276
+	sentencia_print  goto 277
+	sentencia_if  goto 278
+	sentencia_for  goto 279
 
 
 state 252
-	lista_sentencias_sin_return : lista_sentencias_sin_return . sentencia_declarativa  (14)
-	lista_sentencias_sin_return : lista_sentencias_sin_return . sentencia_ejecutable_sin_return  (15)
-	lista_sentencias_sin_return : lista_sentencias_sin_return . error SEMICOLON  (16)
-	declaracion_funcion : inicio_funcion LPAREN parametros_formales RPAREN LBRACE lista_sentencias_sin_return . sentencia_return lista_sentencias RBRACE  (34)
-
-	error  shift 273
-	ID  shift 2
-	IF  shift 18
-	PRINT  shift 19
-	RETURN  shift 20
-	VAR  shift 21
-	FOR  shift 22
-	LPAREN  shift 23
-	INT_KW  shift 24
-	FLOAT_KW  shift 25
-	.  error
-
-	identificador  goto 26
-	encabezado_for  goto 27
-	lambda_expresion  goto 274
-	identificador_completo  goto 29
-	identificador_destino  goto 30
-	inicio_funcion  goto 31
-	tipo  goto 32
-	lista_variables_destino  goto 33
-	lista_tipos  goto 34
-	lambda_prefix  goto 35
-	sentencia_declarativa  goto 275
-	sentencia_ejecutable_sin_return  goto 276
-	declaracion_funcion  goto 38
-	declaracion_variable  goto 39
-	sentencia_return  goto 284
-	asignacion  goto 278
-	sentencia_print  goto 279
-	sentencia_if  goto 280
-	sentencia_for  goto 281
-
-
-state 253
-	lista_sentencias_sin_return : lista_sentencias_sin_return . sentencia_declarativa  (14)
-	lista_sentencias_sin_return : lista_sentencias_sin_return . sentencia_ejecutable_sin_return  (15)
-	lista_sentencias_sin_return : lista_sentencias_sin_return . error SEMICOLON  (16)
-	declaracion_funcion : lista_tipos LPAREN parametros_formales RPAREN LBRACE lista_sentencias_sin_return . sentencia_return lista_sentencias error  (38)
-
-	error  shift 273
-	ID  shift 2
-	IF  shift 18
-	PRINT  shift 19
-	RETURN  shift 20
-	VAR  shift 21
-	FOR  shift 22
-	LPAREN  shift 23
-	INT_KW  shift 24
-	FLOAT_KW  shift 25
-	.  error
-
-	identificador  goto 26
-	encabezado_for  goto 27
-	lambda_expresion  goto 274
-	identificador_completo  goto 29
-	identificador_destino  goto 30
-	inicio_funcion  goto 31
-	tipo  goto 32
-	lista_variables_destino  goto 33
-	lista_tipos  goto 34
-	lambda_prefix  goto 35
-	sentencia_declarativa  goto 275
-	sentencia_ejecutable_sin_return  goto 276
-	declaracion_funcion  goto 38
-	declaracion_variable  goto 39
-	sentencia_return  goto 285
-	asignacion  goto 278
-	sentencia_print  goto 279
-	sentencia_if  goto 280
-	sentencia_for  goto 281
-
-
-state 254
 	if_simple : IF LPAREN condicion RPAREN . sentencia_ejecutable  (86)
 
 	ID  shift 2
@@ -3204,7 +3283,7 @@ state 254
 	identificador_destino  goto 30
 	lista_variables_destino  goto 33
 	lambda_prefix  goto 35
-	sentencia_ejecutable  goto 286
+	sentencia_ejecutable  goto 284
 	sentencia_return  goto 40
 	asignacion  goto 41
 	sentencia_print  goto 42
@@ -3212,132 +3291,132 @@ state 254
 	sentencia_for  goto 44
 
 
-state 255
+state 253
 	lambda_argumento : ID .  (143)
 
 	.  reduce 143
 
 
-state 256
+state 254
 	lambda_argumento : INT16 .  (144)
 
 	.  reduce 144
 
 
-state 257
+state 255
 	lambda_argumento : FLOAT32 .  (145)
 
 	.  reduce 145
 
 
-state 258
+state 256
 	lambda_expresion : lambda_prefix error if_simple RBRACE LPAREN lambda_argumento . RPAREN  (140)
 
-	RPAREN  shift 287
+	RPAREN  shift 285
 	.  error
 
 
-state 259
+state 257
 	lambda_expresion : lambda_prefix LBRACE if_simple error LPAREN lambda_argumento . RPAREN  (141)
 
+	RPAREN  shift 286
+	.  error
+
+
+state 258
+	lambda_expresion : lambda_prefix LBRACE if_simple RBRACE LPAREN lambda_argumento . RPAREN  (139)
+	lambda_expresion : lambda_prefix LBRACE if_simple RBRACE LPAREN lambda_argumento . error  (142)
+
+	error  shift 287
 	RPAREN  shift 288
 	.  error
 
 
-state 260
-	lambda_expresion : lambda_prefix LBRACE if_simple RBRACE LPAREN lambda_argumento . RPAREN  (139)
-	lambda_expresion : lambda_prefix LBRACE if_simple RBRACE LPAREN lambda_argumento . error  (142)
-
-	error  shift 289
-	RPAREN  shift 290
-	.  error
-
-
-state 261
+state 259
 	bloque_sentencias_ejecutables : LBRACE lista_sentencias_ejecutables RBRACE .  (76)
 
 	.  reduce 76
 
 
-state 262
+state 260
 	resto_if : ELSE $$1 . bloque_sentencias_ejecutables ENDIF SEMICOLON  (79)
 
-	LBRACE  shift 195
+	LBRACE  shift 193
 	.  error
 
-	bloque_sentencias_ejecutables  goto 291
+	bloque_sentencias_ejecutables  goto 289
 
 
-state 263
+state 261
 	resto_if : ENDIF SEMICOLON .  (77)
 
 	.  reduce 77
 
 
-state 264
+state 262
 	sentencia_if : IF LPAREN condicion RPAREN $$2 bloque_sentencias_ejecutables resto_if .  (82)
 
 	.  reduce 82
 
 
-state 265
+state 263
 	sentencia_for : FOR error identificador_destino FROM factor TO factor . RPAREN bloque_sentencias_ejecutables SEMICOLON  (89)
+
+	RPAREN  shift 290
+	.  error
+
+
+state 264
+	sentencia_for : FOR LPAREN error FROM factor TO factor . RPAREN bloque_sentencias_ejecutables SEMICOLON  (90)
+
+	RPAREN  shift 291
+	.  error
+
+
+state 265
+	sentencia_for : FOR LPAREN identificador_destino error factor TO factor . RPAREN bloque_sentencias_ejecutables SEMICOLON  (91)
 
 	RPAREN  shift 292
 	.  error
 
 
 state 266
-	sentencia_for : FOR LPAREN error FROM factor TO factor . RPAREN bloque_sentencias_ejecutables SEMICOLON  (90)
+	sentencia_for : FOR LPAREN identificador_destino FROM error TO factor . RPAREN bloque_sentencias_ejecutables SEMICOLON  (92)
 
 	RPAREN  shift 293
 	.  error
 
 
 state 267
-	sentencia_for : FOR LPAREN identificador_destino error factor TO factor . RPAREN bloque_sentencias_ejecutables SEMICOLON  (91)
+	sentencia_for : FOR LPAREN identificador_destino FROM factor error factor . RPAREN bloque_sentencias_ejecutables SEMICOLON  (93)
 
 	RPAREN  shift 294
 	.  error
 
 
 state 268
-	sentencia_for : FOR LPAREN identificador_destino FROM error TO factor . RPAREN bloque_sentencias_ejecutables SEMICOLON  (92)
+	sentencia_for : FOR LPAREN identificador_destino FROM factor TO error . RPAREN bloque_sentencias_ejecutables SEMICOLON  (94)
 
 	RPAREN  shift 295
 	.  error
 
 
 state 269
-	sentencia_for : FOR LPAREN identificador_destino FROM factor error factor . RPAREN bloque_sentencias_ejecutables SEMICOLON  (93)
+	encabezado_for : FOR LPAREN identificador_destino FROM factor TO factor . RPAREN  (87)
+	sentencia_for : FOR LPAREN identificador_destino FROM factor TO factor . error bloque_sentencias_ejecutables SEMICOLON  (95)
 
-	RPAREN  shift 296
-	.  error
-
-
-state 270
-	sentencia_for : FOR LPAREN identificador_destino FROM factor TO error . RPAREN bloque_sentencias_ejecutables SEMICOLON  (94)
-
+	error  shift 296
 	RPAREN  shift 297
 	.  error
 
 
-state 271
-	encabezado_for : FOR LPAREN identificador_destino FROM factor TO factor . RPAREN  (87)
-	sentencia_for : FOR LPAREN identificador_destino FROM factor TO factor . error bloque_sentencias_ejecutables SEMICOLON  (95)
-
-	error  shift 298
-	RPAREN  shift 299
-	.  error
-
-
-state 272
+state 270
 	lista_sentencias_sin_return : lista_sentencias_sin_return . sentencia_declarativa  (14)
 	lista_sentencias_sin_return : lista_sentencias_sin_return . sentencia_ejecutable_sin_return  (15)
 	lista_sentencias_sin_return : lista_sentencias_sin_return . error SEMICOLON  (16)
 	declaracion_funcion : inicio_funcion error LPAREN parametros_formales RPAREN LBRACE lista_sentencias_sin_return . sentencia_return lista_sentencias RBRACE  (35)
 
-	error  shift 273
+	error  shift 271
 	ID  shift 2
 	IF  shift 18
 	PRINT  shift 19
@@ -3351,7 +3430,7 @@ state 272
 
 	identificador  goto 26
 	encabezado_for  goto 27
-	lambda_expresion  goto 274
+	lambda_expresion  goto 272
 	identificador_completo  goto 29
 	identificador_destino  goto 30
 	inicio_funcion  goto 31
@@ -3359,44 +3438,86 @@ state 272
 	lista_variables_destino  goto 33
 	lista_tipos  goto 34
 	lambda_prefix  goto 35
-	sentencia_declarativa  goto 275
-	sentencia_ejecutable_sin_return  goto 276
+	sentencia_declarativa  goto 273
+	sentencia_ejecutable_sin_return  goto 274
 	declaracion_funcion  goto 38
 	declaracion_variable  goto 39
-	sentencia_return  goto 300
-	asignacion  goto 278
-	sentencia_print  goto 279
-	sentencia_if  goto 280
-	sentencia_for  goto 281
+	sentencia_return  goto 298
+	asignacion  goto 276
+	sentencia_print  goto 277
+	sentencia_if  goto 278
+	sentencia_for  goto 279
 
 
-state 273
+state 271
 	lista_sentencias_sin_return : lista_sentencias_sin_return error . SEMICOLON  (16)
 
-	SEMICOLON  shift 301
+	SEMICOLON  shift 299
 	.  error
 
 
-state 274
+state 272
 	sentencia_ejecutable_sin_return : lambda_expresion .  (69)
 
 	.  reduce 69
 
 
-state 275
+state 273
 	lista_sentencias_sin_return : lista_sentencias_sin_return sentencia_declarativa .  (14)
 
 	.  reduce 14
 
 
-state 276
+state 274
 	lista_sentencias_sin_return : lista_sentencias_sin_return sentencia_ejecutable_sin_return .  (15)
 
 	.  reduce 15
 
 
-state 277
+state 275
 	declaracion_funcion : inicio_funcion LPAREN error RPAREN LBRACE lista_sentencias_sin_return sentencia_return . lista_sentencias RBRACE  (36)
+	lista_sentencias : .  (9)
+
+	.  reduce 9
+
+	lista_sentencias  goto 300
+
+
+state 276
+	sentencia_ejecutable_sin_return : asignacion .  (65)
+
+	.  reduce 65
+
+
+state 277
+	sentencia_ejecutable_sin_return : sentencia_print .  (66)
+
+	.  reduce 66
+
+
+state 278
+	sentencia_ejecutable_sin_return : sentencia_if .  (67)
+
+	.  reduce 67
+
+
+state 279
+	sentencia_ejecutable_sin_return : sentencia_for .  (68)
+
+	.  reduce 68
+
+
+state 280
+	declaracion_funcion : inicio_funcion LPAREN parametros_formales error LBRACE lista_sentencias_sin_return sentencia_return . lista_sentencias RBRACE  (39)
+	lista_sentencias : .  (9)
+
+	.  reduce 9
+
+	lista_sentencias  goto 301
+
+
+state 281
+	declaracion_funcion : inicio_funcion LPAREN parametros_formales RPAREN error lista_sentencias_sin_return sentencia_return . lista_sentencias RBRACE  (37)
 	lista_sentencias : .  (9)
 
 	.  reduce 9
@@ -3404,32 +3525,8 @@ state 277
 	lista_sentencias  goto 302
 
 
-state 278
-	sentencia_ejecutable_sin_return : asignacion .  (65)
-
-	.  reduce 65
-
-
-state 279
-	sentencia_ejecutable_sin_return : sentencia_print .  (66)
-
-	.  reduce 66
-
-
-state 280
-	sentencia_ejecutable_sin_return : sentencia_if .  (67)
-
-	.  reduce 67
-
-
-state 281
-	sentencia_ejecutable_sin_return : sentencia_for .  (68)
-
-	.  reduce 68
-
-
 state 282
-	declaracion_funcion : inicio_funcion LPAREN parametros_formales error LBRACE lista_sentencias_sin_return sentencia_return . lista_sentencias RBRACE  (39)
+	declaracion_funcion : inicio_funcion LPAREN parametros_formales RPAREN LBRACE lista_sentencias_sin_return sentencia_return . lista_sentencias RBRACE  (34)
 	lista_sentencias : .  (9)
 
 	.  reduce 9
@@ -3438,7 +3535,7 @@ state 282
 
 
 state 283
-	declaracion_funcion : inicio_funcion LPAREN parametros_formales RPAREN error lista_sentencias_sin_return sentencia_return . lista_sentencias RBRACE  (37)
+	declaracion_funcion : lista_tipos LPAREN parametros_formales RPAREN LBRACE lista_sentencias_sin_return sentencia_return . lista_sentencias error  (38)
 	lista_sentencias : .  (9)
 
 	.  reduce 9
@@ -3447,149 +3544,211 @@ state 283
 
 
 state 284
-	declaracion_funcion : inicio_funcion LPAREN parametros_formales RPAREN LBRACE lista_sentencias_sin_return sentencia_return . lista_sentencias RBRACE  (34)
-	lista_sentencias : .  (9)
-
-	.  reduce 9
-
-	lista_sentencias  goto 305
-
-
-state 285
-	declaracion_funcion : lista_tipos LPAREN parametros_formales RPAREN LBRACE lista_sentencias_sin_return sentencia_return . lista_sentencias error  (38)
-	lista_sentencias : .  (9)
-
-	.  reduce 9
-
-	lista_sentencias  goto 306
-
-
-state 286
 	if_simple : IF LPAREN condicion RPAREN sentencia_ejecutable .  (86)
 
 	.  reduce 86
 
 
-state 287
+state 285
 	lambda_expresion : lambda_prefix error if_simple RBRACE LPAREN lambda_argumento RPAREN .  (140)
 
 	.  reduce 140
 
 
-state 288
+state 286
 	lambda_expresion : lambda_prefix LBRACE if_simple error LPAREN lambda_argumento RPAREN .  (141)
 
 	.  reduce 141
 
 
-state 289
+state 287
 	lambda_expresion : lambda_prefix LBRACE if_simple RBRACE LPAREN lambda_argumento error .  (142)
 
 	.  reduce 142
 
 
-state 290
+state 288
 	lambda_expresion : lambda_prefix LBRACE if_simple RBRACE LPAREN lambda_argumento RPAREN .  (139)
 
 	.  reduce 139
 
 
-state 291
+state 289
 	resto_if : ELSE $$1 bloque_sentencias_ejecutables . ENDIF SEMICOLON  (79)
 
-	ENDIF  shift 307
+	ENDIF  shift 305
 	.  error
 
 
-state 292
+state 290
 	sentencia_for : FOR error identificador_destino FROM factor TO factor RPAREN . bloque_sentencias_ejecutables SEMICOLON  (89)
 
-	LBRACE  shift 195
+	LBRACE  shift 193
+	.  error
+
+	bloque_sentencias_ejecutables  goto 306
+
+
+state 291
+	sentencia_for : FOR LPAREN error FROM factor TO factor RPAREN . bloque_sentencias_ejecutables SEMICOLON  (90)
+
+	LBRACE  shift 193
+	.  error
+
+	bloque_sentencias_ejecutables  goto 307
+
+
+state 292
+	sentencia_for : FOR LPAREN identificador_destino error factor TO factor RPAREN . bloque_sentencias_ejecutables SEMICOLON  (91)
+
+	LBRACE  shift 193
 	.  error
 
 	bloque_sentencias_ejecutables  goto 308
 
 
 state 293
-	sentencia_for : FOR LPAREN error FROM factor TO factor RPAREN . bloque_sentencias_ejecutables SEMICOLON  (90)
+	sentencia_for : FOR LPAREN identificador_destino FROM error TO factor RPAREN . bloque_sentencias_ejecutables SEMICOLON  (92)
 
-	LBRACE  shift 195
+	LBRACE  shift 193
 	.  error
 
 	bloque_sentencias_ejecutables  goto 309
 
 
 state 294
-	sentencia_for : FOR LPAREN identificador_destino error factor TO factor RPAREN . bloque_sentencias_ejecutables SEMICOLON  (91)
+	sentencia_for : FOR LPAREN identificador_destino FROM factor error factor RPAREN . bloque_sentencias_ejecutables SEMICOLON  (93)
 
-	LBRACE  shift 195
+	LBRACE  shift 193
 	.  error
 
 	bloque_sentencias_ejecutables  goto 310
 
 
 state 295
-	sentencia_for : FOR LPAREN identificador_destino FROM error TO factor RPAREN . bloque_sentencias_ejecutables SEMICOLON  (92)
+	sentencia_for : FOR LPAREN identificador_destino FROM factor TO error RPAREN . bloque_sentencias_ejecutables SEMICOLON  (94)
 
-	LBRACE  shift 195
+	LBRACE  shift 193
 	.  error
 
 	bloque_sentencias_ejecutables  goto 311
 
 
 state 296
-	sentencia_for : FOR LPAREN identificador_destino FROM factor error factor RPAREN . bloque_sentencias_ejecutables SEMICOLON  (93)
+	sentencia_for : FOR LPAREN identificador_destino FROM factor TO factor error . bloque_sentencias_ejecutables SEMICOLON  (95)
 
-	LBRACE  shift 195
+	LBRACE  shift 193
 	.  error
 
 	bloque_sentencias_ejecutables  goto 312
 
 
 state 297
-	sentencia_for : FOR LPAREN identificador_destino FROM factor TO error RPAREN . bloque_sentencias_ejecutables SEMICOLON  (94)
-
-	LBRACE  shift 195
-	.  error
-
-	bloque_sentencias_ejecutables  goto 313
-
-
-state 298
-	sentencia_for : FOR LPAREN identificador_destino FROM factor TO factor error . bloque_sentencias_ejecutables SEMICOLON  (95)
-
-	LBRACE  shift 195
-	.  error
-
-	bloque_sentencias_ejecutables  goto 314
-
-
-state 299
 	encabezado_for : FOR LPAREN identificador_destino FROM factor TO factor RPAREN .  (87)
 
 	.  reduce 87
 
 
-state 300
+state 298
 	declaracion_funcion : inicio_funcion error LPAREN parametros_formales RPAREN LBRACE lista_sentencias_sin_return sentencia_return . lista_sentencias RBRACE  (35)
 	lista_sentencias : .  (9)
 
 	.  reduce 9
 
-	lista_sentencias  goto 315
+	lista_sentencias  goto 313
 
 
-state 301
+state 299
 	lista_sentencias_sin_return : lista_sentencias_sin_return error SEMICOLON .  (16)
 
 	.  reduce 16
+
+
+state 300
+	lista_sentencias : lista_sentencias . sentencia_declarativa  (10)
+	lista_sentencias : lista_sentencias . sentencia_ejecutable  (11)
+	lista_sentencias : lista_sentencias . error SEMICOLON  (12)
+	declaracion_funcion : inicio_funcion LPAREN error RPAREN LBRACE lista_sentencias_sin_return sentencia_return lista_sentencias . RBRACE  (36)
+
+	error  shift 45
+	ID  shift 2
+	IF  shift 18
+	PRINT  shift 19
+	RETURN  shift 20
+	VAR  shift 21
+	FOR  shift 22
+	LPAREN  shift 23
+	RBRACE  shift 314
+	INT_KW  shift 24
+	FLOAT_KW  shift 25
+	.  error
+
+	identificador  goto 26
+	encabezado_for  goto 27
+	lambda_expresion  goto 28
+	identificador_completo  goto 29
+	identificador_destino  goto 30
+	inicio_funcion  goto 31
+	tipo  goto 32
+	lista_variables_destino  goto 33
+	lista_tipos  goto 34
+	lambda_prefix  goto 35
+	sentencia_declarativa  goto 36
+	sentencia_ejecutable  goto 37
+	declaracion_funcion  goto 38
+	declaracion_variable  goto 39
+	sentencia_return  goto 40
+	asignacion  goto 41
+	sentencia_print  goto 42
+	sentencia_if  goto 43
+	sentencia_for  goto 44
+
+
+state 301
+	lista_sentencias : lista_sentencias . sentencia_declarativa  (10)
+	lista_sentencias : lista_sentencias . sentencia_ejecutable  (11)
+	lista_sentencias : lista_sentencias . error SEMICOLON  (12)
+	declaracion_funcion : inicio_funcion LPAREN parametros_formales error LBRACE lista_sentencias_sin_return sentencia_return lista_sentencias . RBRACE  (39)
+
+	error  shift 45
+	ID  shift 2
+	IF  shift 18
+	PRINT  shift 19
+	RETURN  shift 20
+	VAR  shift 21
+	FOR  shift 22
+	LPAREN  shift 23
+	RBRACE  shift 315
+	INT_KW  shift 24
+	FLOAT_KW  shift 25
+	.  error
+
+	identificador  goto 26
+	encabezado_for  goto 27
+	lambda_expresion  goto 28
+	identificador_completo  goto 29
+	identificador_destino  goto 30
+	inicio_funcion  goto 31
+	tipo  goto 32
+	lista_variables_destino  goto 33
+	lista_tipos  goto 34
+	lambda_prefix  goto 35
+	sentencia_declarativa  goto 36
+	sentencia_ejecutable  goto 37
+	declaracion_funcion  goto 38
+	declaracion_variable  goto 39
+	sentencia_return  goto 40
+	asignacion  goto 41
+	sentencia_print  goto 42
+	sentencia_if  goto 43
+	sentencia_for  goto 44
 
 
 state 302
 	lista_sentencias : lista_sentencias . sentencia_declarativa  (10)
 	lista_sentencias : lista_sentencias . sentencia_ejecutable  (11)
 	lista_sentencias : lista_sentencias . error SEMICOLON  (12)
-	declaracion_funcion : inicio_funcion LPAREN error RPAREN LBRACE lista_sentencias_sin_return sentencia_return lista_sentencias . RBRACE  (36)
+	declaracion_funcion : inicio_funcion LPAREN parametros_formales RPAREN error lista_sentencias_sin_return sentencia_return lista_sentencias . RBRACE  (37)
 
 	error  shift 45
 	ID  shift 2
@@ -3629,7 +3788,7 @@ state 303
 	lista_sentencias : lista_sentencias . sentencia_declarativa  (10)
 	lista_sentencias : lista_sentencias . sentencia_ejecutable  (11)
 	lista_sentencias : lista_sentencias . error SEMICOLON  (12)
-	declaracion_funcion : inicio_funcion LPAREN parametros_formales error LBRACE lista_sentencias_sin_return sentencia_return lista_sentencias . RBRACE  (39)
+	declaracion_funcion : inicio_funcion LPAREN parametros_formales RPAREN LBRACE lista_sentencias_sin_return sentencia_return lista_sentencias . RBRACE  (34)
 
 	error  shift 45
 	ID  shift 2
@@ -3669,9 +3828,9 @@ state 304
 	lista_sentencias : lista_sentencias . sentencia_declarativa  (10)
 	lista_sentencias : lista_sentencias . sentencia_ejecutable  (11)
 	lista_sentencias : lista_sentencias . error SEMICOLON  (12)
-	declaracion_funcion : inicio_funcion LPAREN parametros_formales RPAREN error lista_sentencias_sin_return sentencia_return lista_sentencias . RBRACE  (37)
+	declaracion_funcion : lista_tipos LPAREN parametros_formales RPAREN LBRACE lista_sentencias_sin_return sentencia_return lista_sentencias . error  (38)
 
-	error  shift 45
+	error  shift 318
 	ID  shift 2
 	IF  shift 18
 	PRINT  shift 19
@@ -3679,7 +3838,6 @@ state 304
 	VAR  shift 21
 	FOR  shift 22
 	LPAREN  shift 23
-	RBRACE  shift 318
 	INT_KW  shift 24
 	FLOAT_KW  shift 25
 	.  error
@@ -3706,141 +3864,62 @@ state 304
 
 
 state 305
-	lista_sentencias : lista_sentencias . sentencia_declarativa  (10)
-	lista_sentencias : lista_sentencias . sentencia_ejecutable  (11)
-	lista_sentencias : lista_sentencias . error SEMICOLON  (12)
-	declaracion_funcion : inicio_funcion LPAREN parametros_formales RPAREN LBRACE lista_sentencias_sin_return sentencia_return lista_sentencias . RBRACE  (34)
+	resto_if : ELSE $$1 bloque_sentencias_ejecutables ENDIF . SEMICOLON  (79)
 
-	error  shift 45
-	ID  shift 2
-	IF  shift 18
-	PRINT  shift 19
-	RETURN  shift 20
-	VAR  shift 21
-	FOR  shift 22
-	LPAREN  shift 23
-	RBRACE  shift 319
-	INT_KW  shift 24
-	FLOAT_KW  shift 25
+	SEMICOLON  shift 319
 	.  error
-
-	identificador  goto 26
-	encabezado_for  goto 27
-	lambda_expresion  goto 28
-	identificador_completo  goto 29
-	identificador_destino  goto 30
-	inicio_funcion  goto 31
-	tipo  goto 32
-	lista_variables_destino  goto 33
-	lista_tipos  goto 34
-	lambda_prefix  goto 35
-	sentencia_declarativa  goto 36
-	sentencia_ejecutable  goto 37
-	declaracion_funcion  goto 38
-	declaracion_variable  goto 39
-	sentencia_return  goto 40
-	asignacion  goto 41
-	sentencia_print  goto 42
-	sentencia_if  goto 43
-	sentencia_for  goto 44
 
 
 state 306
-	lista_sentencias : lista_sentencias . sentencia_declarativa  (10)
-	lista_sentencias : lista_sentencias . sentencia_ejecutable  (11)
-	lista_sentencias : lista_sentencias . error SEMICOLON  (12)
-	declaracion_funcion : lista_tipos LPAREN parametros_formales RPAREN LBRACE lista_sentencias_sin_return sentencia_return lista_sentencias . error  (38)
+	sentencia_for : FOR error identificador_destino FROM factor TO factor RPAREN bloque_sentencias_ejecutables . SEMICOLON  (89)
 
-	error  shift 320
-	ID  shift 2
-	IF  shift 18
-	PRINT  shift 19
-	RETURN  shift 20
-	VAR  shift 21
-	FOR  shift 22
-	LPAREN  shift 23
-	INT_KW  shift 24
-	FLOAT_KW  shift 25
+	SEMICOLON  shift 320
 	.  error
-
-	identificador  goto 26
-	encabezado_for  goto 27
-	lambda_expresion  goto 28
-	identificador_completo  goto 29
-	identificador_destino  goto 30
-	inicio_funcion  goto 31
-	tipo  goto 32
-	lista_variables_destino  goto 33
-	lista_tipos  goto 34
-	lambda_prefix  goto 35
-	sentencia_declarativa  goto 36
-	sentencia_ejecutable  goto 37
-	declaracion_funcion  goto 38
-	declaracion_variable  goto 39
-	sentencia_return  goto 40
-	asignacion  goto 41
-	sentencia_print  goto 42
-	sentencia_if  goto 43
-	sentencia_for  goto 44
 
 
 state 307
-	resto_if : ELSE $$1 bloque_sentencias_ejecutables ENDIF . SEMICOLON  (79)
+	sentencia_for : FOR LPAREN error FROM factor TO factor RPAREN bloque_sentencias_ejecutables . SEMICOLON  (90)
 
 	SEMICOLON  shift 321
 	.  error
 
 
 state 308
-	sentencia_for : FOR error identificador_destino FROM factor TO factor RPAREN bloque_sentencias_ejecutables . SEMICOLON  (89)
+	sentencia_for : FOR LPAREN identificador_destino error factor TO factor RPAREN bloque_sentencias_ejecutables . SEMICOLON  (91)
 
 	SEMICOLON  shift 322
 	.  error
 
 
 state 309
-	sentencia_for : FOR LPAREN error FROM factor TO factor RPAREN bloque_sentencias_ejecutables . SEMICOLON  (90)
+	sentencia_for : FOR LPAREN identificador_destino FROM error TO factor RPAREN bloque_sentencias_ejecutables . SEMICOLON  (92)
 
 	SEMICOLON  shift 323
 	.  error
 
 
 state 310
-	sentencia_for : FOR LPAREN identificador_destino error factor TO factor RPAREN bloque_sentencias_ejecutables . SEMICOLON  (91)
+	sentencia_for : FOR LPAREN identificador_destino FROM factor error factor RPAREN bloque_sentencias_ejecutables . SEMICOLON  (93)
 
 	SEMICOLON  shift 324
 	.  error
 
 
 state 311
-	sentencia_for : FOR LPAREN identificador_destino FROM error TO factor RPAREN bloque_sentencias_ejecutables . SEMICOLON  (92)
+	sentencia_for : FOR LPAREN identificador_destino FROM factor TO error RPAREN bloque_sentencias_ejecutables . SEMICOLON  (94)
 
 	SEMICOLON  shift 325
 	.  error
 
 
 state 312
-	sentencia_for : FOR LPAREN identificador_destino FROM factor error factor RPAREN bloque_sentencias_ejecutables . SEMICOLON  (93)
+	sentencia_for : FOR LPAREN identificador_destino FROM factor TO factor error bloque_sentencias_ejecutables . SEMICOLON  (95)
 
 	SEMICOLON  shift 326
 	.  error
 
 
 state 313
-	sentencia_for : FOR LPAREN identificador_destino FROM factor TO error RPAREN bloque_sentencias_ejecutables . SEMICOLON  (94)
-
-	SEMICOLON  shift 327
-	.  error
-
-
-state 314
-	sentencia_for : FOR LPAREN identificador_destino FROM factor TO factor error bloque_sentencias_ejecutables . SEMICOLON  (95)
-
-	SEMICOLON  shift 328
-	.  error
-
-
-state 315
 	lista_sentencias : lista_sentencias . sentencia_declarativa  (10)
 	lista_sentencias : lista_sentencias . sentencia_ejecutable  (11)
 	lista_sentencias : lista_sentencias . error SEMICOLON  (12)
@@ -3854,7 +3933,7 @@ state 315
 	VAR  shift 21
 	FOR  shift 22
 	LPAREN  shift 23
-	RBRACE  shift 329
+	RBRACE  shift 327
 	INT_KW  shift 24
 	FLOAT_KW  shift 25
 	.  error
@@ -3880,31 +3959,31 @@ state 315
 	sentencia_for  goto 44
 
 
-state 316
+state 314
 	declaracion_funcion : inicio_funcion LPAREN error RPAREN LBRACE lista_sentencias_sin_return sentencia_return lista_sentencias RBRACE .  (36)
 
 	.  reduce 36
 
 
-state 317
+state 315
 	declaracion_funcion : inicio_funcion LPAREN parametros_formales error LBRACE lista_sentencias_sin_return sentencia_return lista_sentencias RBRACE .  (39)
 
 	.  reduce 39
 
 
-state 318
+state 316
 	declaracion_funcion : inicio_funcion LPAREN parametros_formales RPAREN error lista_sentencias_sin_return sentencia_return lista_sentencias RBRACE .  (37)
 
 	.  reduce 37
 
 
-state 319
+state 317
 	declaracion_funcion : inicio_funcion LPAREN parametros_formales RPAREN LBRACE lista_sentencias_sin_return sentencia_return lista_sentencias RBRACE .  (34)
 
 	.  reduce 34
 
 
-state 320
+state 318
 	lista_sentencias : lista_sentencias error . SEMICOLON  (12)
 	declaracion_funcion : lista_tipos LPAREN parametros_formales RPAREN LBRACE lista_sentencias_sin_return sentencia_return lista_sentencias error .  (38)
 
@@ -3922,59 +4001,63 @@ state 320
 	FLOAT_KW  reduce 38
 
 
-state 321
+state 319
 	resto_if : ELSE $$1 bloque_sentencias_ejecutables ENDIF SEMICOLON .  (79)
 
 	.  reduce 79
 
 
-state 322
+state 320
 	sentencia_for : FOR error identificador_destino FROM factor TO factor RPAREN bloque_sentencias_ejecutables SEMICOLON .  (89)
 
 	.  reduce 89
 
 
-state 323
+state 321
 	sentencia_for : FOR LPAREN error FROM factor TO factor RPAREN bloque_sentencias_ejecutables SEMICOLON .  (90)
 
 	.  reduce 90
 
 
-state 324
+state 322
 	sentencia_for : FOR LPAREN identificador_destino error factor TO factor RPAREN bloque_sentencias_ejecutables SEMICOLON .  (91)
 
 	.  reduce 91
 
 
-state 325
+state 323
 	sentencia_for : FOR LPAREN identificador_destino FROM error TO factor RPAREN bloque_sentencias_ejecutables SEMICOLON .  (92)
 
 	.  reduce 92
 
 
-state 326
+state 324
 	sentencia_for : FOR LPAREN identificador_destino FROM factor error factor RPAREN bloque_sentencias_ejecutables SEMICOLON .  (93)
 
 	.  reduce 93
 
 
-state 327
+state 325
 	sentencia_for : FOR LPAREN identificador_destino FROM factor TO error RPAREN bloque_sentencias_ejecutables SEMICOLON .  (94)
 
 	.  reduce 94
 
 
-state 328
+state 326
 	sentencia_for : FOR LPAREN identificador_destino FROM factor TO factor error bloque_sentencias_ejecutables SEMICOLON .  (95)
 
 	.  reduce 95
 
 
-state 329
+state 327
 	declaracion_funcion : inicio_funcion error LPAREN parametros_formales RPAREN LBRACE lista_sentencias_sin_return sentencia_return lista_sentencias RBRACE .  (35)
 
 	.  reduce 35
 
 
+State 53 contains 1 shift/reduce conflict.
+State 123 contains 1 shift/reduce conflict.
+
+
 45 terminals, 47 nonterminals
-146 grammar rules, 330 states
+146 grammar rules, 328 states

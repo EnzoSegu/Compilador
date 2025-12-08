@@ -62,7 +62,7 @@ public class MainParser {
         try (FileReader parserReader = new FileReader(filePath)) { 
             
             Scanner scanner = new Scanner(parserReader);
-            Parser parser = new Parser();
+            Parser parser = new Parser(true);
             parser.setScanner(scanner);
             // Ejecutar análisis sintáctico/semántico y generación de código
             parser.yyparse();

@@ -1,17 +1,14 @@
 
-PROGRAM_ERRORES_SINTACTICOS {
-
-    int FUNCION_ERROR(int P1) {
+PROGRAMERRORESSINTACTICOS {
+    var A, B;
+    A := 10I
+    int FUNCIONERROR(int P1) {
         var VARLOCAL;
         VARLOCAL := 1I;
         
         ## ERROR: Falta RPAREN en return ##
         return (VARLOCAL); 
     }
-    
-    var A, B;
-    
-    A := 10I;
     
     ## ERROR: Falta SEMICOLON al final de la asignación ##
     B := 20I

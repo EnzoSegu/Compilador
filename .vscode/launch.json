@@ -1,0 +1,34 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        
+        {
+            "type": "java",
+            "name": "Current File",
+            "request": "launch",
+            "mainClass": "${file}"
+        },
+
+        {
+            "type": "java",
+            "name": "Debug Compilador Sintáctico",
+            // Ajusta el 'cwd' si el directorio de salida no está en la raíz del proyecto.
+            "request": "launch",
+            "mainClass": "parser.MainParser",
+            // Asegúrate de que tu classpath incluya el directorio 'out' y todas las dependencias
+            "classpath": [
+                "out", // Reemplaza 'out' si tu directorio de clases compiladas es diferente
+                // Agrega cualquier JAR de librería aquí
+            ],
+            // Argumento: La ruta al archivo de prueba que deseas analizar
+            "args": [
+                "src/test/Test.txt" 
+                // Puedes cambiar a "src/test/Test_Semantico_Errores.txt" o cualquier otro.
+            ]
+        }
+
+    ]
+}

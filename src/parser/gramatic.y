@@ -55,21 +55,36 @@ import codigointermedio.*;
     //  MÉTODOS DE ERROR (Sustituyen a System.err.println)
     // =========================================================================
 
+    private void removeLastGenericError() {
+        if (listaErrores.isEmpty()) return;
+    
+    // El mensaje genérico de BYACC/J siempre contiene el prefijo "Error Sintactico" y "syntax error"
+        String lastError = listaErrores.get(listaErrores.size() - 1);
+    
+        if  (lastError.contains("syntax error")) {
+            listaErrores.remove(listaErrores.size() - 1);
+        // NO se toca errorEnProduccion aquí, ya que el error existe.
+        }
+}
+
     // 1. Método para tus errores manuales en la gramática (Sintácticos)
     private void addError(String mensaje) {
-        int linea=lexer.getContext().getLine()-1;
+        removeLastGenericError();
+        int linea=lexer.getContext().getLine();
         String error = "Línea " + linea + ": " + mensaje;
         listaErrores.add(error);
         errorEnProduccion = true;
     }
     // 1. Método para tus errores manuales en la gramática (Sintácticos)
     private void addErrorSemicolon(String mensaje) {
-        int linea = lexer.getContext().getLine();
+        removeLastGenericError();
+        int linea = lexer.getContext().getLine()-1;
         String error = "Línea " + linea + ": " + mensaje;
         listaErrores.add(error);
         errorEnProduccion = true;
     }
     private void addErrorLex(String mensaje, int linea) {
+        removeLastGenericError();
         String error = "Línea " + linea + ": " + mensaje;
         listaErrores.add(error);
         errorEnProduccion = true;
@@ -79,15 +94,19 @@ import codigointermedio.*;
     // 2. Método para errores SEMÁNTICOS (Tipos, declaraciones)
     // Se usa: yyerror("Mensaje", true);
     public void yyerror(String s, boolean semantico) {
-        String error = "Línea " + lexer.getContext().getLine() + ": Error Semántico : " + s;
-        listaErrores.add(error);
+        if(!errorEnProduccion){
+            String error = "Línea " + lexer.getContext().getLine()+" "+ s;
+            listaErrores.add(error);
+        }
         errorEnProduccion = true;
     }
 
     // 3. Método automático de BYACC (Sintácticos por defecto)
     public void yyerror(String s) {
-        String error = "Línea " + lexer.getContext().getLine() + ": Error Sintactico : " + s;
-        listaErrores.add(error);
+        if(!errorEnProduccion){
+            String error = "Línea " + lexer.getContext().getLine()+" " + s;
+            listaErrores.add(error);
+        }
         errorEnProduccion = true;
     }
 
@@ -325,8 +344,7 @@ declaracion_variable
         } 
     | VAR lista_variables error
         { 
-            addError("Error Sintáctico: Falta punto y coma ';' al final de la declaración de variables.");
-            
+            addErrorSemicolon("Error Sintáctico: Falta punto y coma ';' al final de la declaración de variables.");
             listaVariablesError = false; 
         }
     ;
@@ -344,7 +362,7 @@ identificador
           $$ = $1; 
       }
     | ID ERROR ID {
-            addError("Error Lexico: Identificador inválido '" + $1.getLexeme() + "_" + $3.getLexeme() + "'. El caracter $2.getLexeme() no está permitido en los identificadores.", true))
+            yyerror("Error Lexico: Identificador inválido '" + $1.getLexeme() + "_" + $3.getLexeme() + "'. El caracter $2.getLexeme() no está permitido en los identificadores.", true));
     }
     ;
 identificador_completo
@@ -720,7 +738,7 @@ sentencia_return
         addError("Error Sintactico: Falta de '(' en return.");
     }
     | RETURN LPAREN lista_expresiones error SEMICOLON{
-        addError("Error Sintactico: Falta de '(' en return.");
+        addError("Error Sintactico: Falta de ')' en return.");
     }
     ;
 
