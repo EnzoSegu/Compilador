@@ -10,7 +10,7 @@ public class AS7 implements SemanticAction {
         char unexpected = (char) symbol;
 
         // Generar token de error
-        context.setToken(TokenType.ERROR, "Error Lexico en línea " + context.getLine() +
+        context.setToken(TokenType.ERROR, "Error Lexico "  +
                 ": símbolo no esperado -> '" + lexeme + "'");
 
         // Limpiar el buffer de lexema para reiniciar

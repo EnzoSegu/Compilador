@@ -11,7 +11,7 @@ public class AS6 implements SemanticAction {
         if (c == '\n') {
             // Error: salto de línea dentro de string
             context.setToken(TokenType.ERROR, 
-                "Error: salto de línea en cadena en línea " + context.getLine());
+                "Error Lexico: salto de línea en cadena ");
             context.clear();
         } else {
             // Si no es salto de línea, lo agregamos al lexema normalmente

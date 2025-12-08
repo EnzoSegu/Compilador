@@ -6,39 +6,40 @@ PROGRAMA_ERRORES_SINTACTICOS {
         VARLOCAL := 1I;
         
         ## ERROR: Falta RPAREN en return ##
-        return (VARLOCAL; 
+        return (VARLOCAL); 
     }
     var A, B;
     
     A := 10I
     
-    ## ERROR: Falta SEMICOLON al final de la asignación
+    ## ERROR: Falta SEMICOLON al final de la asignación ##
     B := 20I
     
-    ## ERROR: Falta la palabra clave 'FROM' en el FOR
+    ## ERROR: Falta la palabra clave 'FROM' en el FOR ##
     for (A 1I to 3I) { 
         print(A);
     }; 
     
-    ## ERROR: Falta la palabra clave 'TO' en el FOR
+    ## ERROR: Falta la palabra clave 'TO' en el FOR ##
     for (B from 1I 3I) { 
         print(B);
     };
     
-    ## ERROR: Falta el LBRACE de apertura
-    IF (A < B) 
+    ## ERROR: Falta el LBRACE de apertura ##
+    IF (A < B) {
         print("F"); 
     } ENDIF; 
     
-    ## ERROR: Falta la palabra clave 'ENDIF'
+    ## ERROR: Falta la palabra clave 'ENDIF' ##
     IF (A < B) { 
         print("T"); 
     } ELSE { 
         print("F"); 
     };
     
-    ## ERROR: Falta el LPAREN en TOF
+    ## ERROR: Falta el LPAREN en TOF ##
     A := TOF A) + 1.0; 
     
-    ## ERROR: Falta RPAREN de cierre de programa
+    ## ERROR: Falta RPAREN de cierre de programa ##
+
 }

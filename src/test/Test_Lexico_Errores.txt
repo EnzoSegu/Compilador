@@ -47,7 +47,7 @@ PRUEBALEXICO {
     var VARKW, FORKW, CVKW;
     
     VAR KW; ## ERROR: Espacio o caracter no permitido después de palabra reservada ##
-    if (VARKW == FORKW) { } endif; ## ERROR: Palabra reservada "if" en minúsculas ##
+    if (VARKW == FORKW) { } endif; ## ERROR: Comparacion de dos variable sin ningun tipo inferido ##
     
     ## 5. COMENTARIOS Y CADENAS MAL ESCRITAS ##
     
@@ -55,8 +55,9 @@ PRUEBALEXICO {
        debe ser ignorado por el compilador ##
     
     ## OK: Operadores y delimitadores ##
-    VARKW := VARKW + FORKW / 2I;
-    IF (VARKW >= FORKW) { VARKW := -1I; } ENDIF; 
+    VARKW := 7I / 2I;
+    FORKW:= 2I ;
+    if (VARKW >= FORKW) { VARKW := -1I; } endif; 
     VARKW := 10I := VARKW; ## ASIGNACION_COLON luego ASSIGN ##
 
     ## ERROR LÉXICO: Salto de línea en cadena (AS6) ##

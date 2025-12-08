@@ -9,7 +9,7 @@ PROGRAMAERRORESSEMANTICOS {
     }
 
     int FMULTIPLERET(int P) {
-        return (1I, 2I); ## ERROR Semántico: La función F_MULTIPLERET debe retornar 1 valor, pero retorna 2
+        return (1I, 2I); ## ERROR Semántico: La función F_MULTIPLERET debe retornar 1 valor, pero retorna 2 ##
     }
 
     int FCR(cr le int PCR) {
@@ -17,7 +17,8 @@ PROGRAMAERRORESSEMANTICOS {
     }
 
     var A, B;
-    var A; ## ERROR Semántico: Variable 'A' redeclarada ##
+    ## ERROR Semántico: Variable 'A' redeclarada ##
+    var A;
     var FVAR, IVAR;
     
     IVAR := 10I;

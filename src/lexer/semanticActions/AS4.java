@@ -24,8 +24,7 @@ public class AS4 implements SemanticAction {
 
             if (value != 0.0f &&
                 (Math.abs(value) < 1.17549435E-38f || Math.abs(value) > 3.40282347E38f)) {
-                context.setToken(TokenType.ERROR, "Línea " + context.getLine() +
-                        ": Error: Constante FLOAT32 fuera de rango -> " + lexeme);
+                context.setToken(TokenType.ERROR, "Error Lexico: Constante FLOAT32 fuera de rango -> " + lexeme);
             } else {
             
                 SymbolEntry entry = new SymbolEntry(lexeme, "float", value);
@@ -34,8 +33,7 @@ public class AS4 implements SemanticAction {
 
         } catch (NumberFormatException e) {
            
-            context.setToken(TokenType.ERROR, "Línea " + context.getLine() +
-                    ": Error: Formato inválido de constante FLOAT32 -> " + lexeme);
+            context.setToken(TokenType.ERROR, "Error lexico: Formato inválido de constante FLOAT32 -> " + lexeme);
         }
 
         context.clear();

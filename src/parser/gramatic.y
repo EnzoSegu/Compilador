@@ -70,17 +70,18 @@ import codigointermedio.*;
         errorEnProduccion = true;
     }
 
+
     // 2. Método para errores SEMÁNTICOS (Tipos, declaraciones)
     // Se usa: yyerror("Mensaje", true);
     public void yyerror(String s, boolean semantico) {
-        String error = "Error Semántico - Línea " + lexer.getContext().getLine() + ": " + s;
+        String error = "Línea " + lexer.getContext().getLine() + ": Error Semántico : " + s;
         listaErrores.add(error);
         errorEnProduccion = true;
     }
 
     // 3. Método automático de BYACC (Sintácticos por defecto)
     public void yyerror(String s) {
-        String error = "Error Sintáctico " + ": " + s;
+        String error = "Línea " + lexer.getContext().getLine() + ": Error Semántico : " + s;
         listaErrores.add(error);
         errorEnProduccion = true;
     }
@@ -248,15 +249,15 @@ programa
     }
     | error LBRACE lista_sentencias RBRACE
         {
-            addError("Falta nombre de programa.");
+            addError("Error Sintactico: Falta nombre de programa.");
         }
     | inicio_programa LBRACE lista_sentencias error
         {
-            addError("Falta delimitador '}' de cierre del programa.");
+            addError("Error Sintactico: Falta delimitador '}' de cierre del programa.");
         }
     | inicio_programa lista_sentencias error 
         {
-            addError("Falta delimitador '{' de apertura del programa.");
+            addError("Error Sintactico: Falta delimitador '{' de apertura del programa.");
         }
     ;
     
@@ -302,7 +303,7 @@ declaracion_variable
                 if (symbolTable.add(entry) ) { 
                     
                 }else{
-                    yyerror("Variable '" + entry.getLexeme() + "' redeclarada en el ámbito actual.", true);
+                    yyerror("Error Semantico: Variable '" + entry.getLexeme() + "' redeclarada en el ámbito actual.", true);
                     redeclared = true;
                 }
             }
@@ -315,7 +316,7 @@ declaracion_variable
         }
     | VAR SEMICOLON
         { 
-            addError("Falta lista de variables a continuación de var.");
+            addError("Error Semantico: Falta lista de variables a continuación de var.");
         } 
     | VAR lista_variables error
         { 
@@ -332,7 +333,7 @@ identificador
     | ID UNDERSCORE ID 
       { 
           /* Reportamos el error personalizado */
-          yyerror("Error: Identificador inválido '" + $1.getLexeme() + "_" + $3.getLexeme() + "'. El caracter '_' no está permitido en los identificadores.", true);
+          yyerror("Error Lexico: Identificador inválido '" + $1.getLexeme() + "_" + $3.getLexeme() + "'. El caracter '_' no está permitido en los identificadores.", true);
           
           /* RECUPERACIÓN: Asumimos que el usuario quería usar el primer ID para seguir compilando */
           $$ = $1; 
@@ -408,14 +409,14 @@ identificador_destino:
             encontrado = symbolTable.lookup(lexema, prefijo);
             
             if (encontrado == null) {
-                yyerror("Error: La variable '" + lexema + "' no existe en el ámbito '" + prefijo + "' o no es visible.", true);
+                yyerror("Error Semantico: La variable '" + lexema + "' no existe en el ámbito '" + prefijo + "' o no es visible.", true);
             }
         } else {
             // Caso 1: No tiene prefijo (ej: A) -> Buscar en actual y hacia arriba
             encontrado = symbolTable.lookup(lexema);
             
             if (encontrado == null) {
-                yyerror("Variable no declarada: '" + lexema + "'", true);
+                yyerror("Error Semantico: Variable no declarada: '" + lexema + "'", true);
             }
         }
         // ----------------------
@@ -465,7 +466,7 @@ inicio_funcion
           }
            
           if (!symbolTable.add(se_func)) {
-                yyerror("Función redeclarada '" + se_func.getLexeme() + "'", true);
+                yyerror("Error Semantico: Función redeclarada '" + se_func.getLexeme() + "'", true);
             }  
 
           currentFunctionEntry = se_func;
@@ -487,7 +488,7 @@ declaracion_funcion
             PI().generateFunctionEnd(se);
 
             if (listaTiposError) {
-                addError("Falta ',' en lista de tipos de retorno.");
+                addError("Error Sintactico: Falta ',' en lista de tipos de retorno.");
             }
             
             if (!errorEnProduccion) { 
@@ -501,25 +502,25 @@ declaracion_funcion
         }
     | inicio_funcion error LPAREN parametros_formales RPAREN LBRACE lista_sentencias_sin_return sentencia_return lista_sentencias RBRACE
         { 
-            addError("Falta nombre de función.");
+            addError("Error Sintactico: Falta nombre de función.");
         }
     | inicio_funcion  LPAREN error RPAREN LBRACE lista_sentencias_sin_return sentencia_return lista_sentencias RBRACE
         { 
-            addError("Se tiene que tener mínimo un parámetro formal.");
+            addError("Error Semantico: Se tiene que tener mínimo un parámetro formal.");
         }
     | inicio_funcion  LPAREN parametros_formales RPAREN error lista_sentencias_sin_return sentencia_return lista_sentencias RBRACE
         { 
-            addError("Falta '{' de apertura de función.");
+            addError("Error Sintactico: Falta '{' de apertura de función.");
         }
     | lista_tipos  LPAREN parametros_formales RPAREN LBRACE lista_sentencias_sin_return sentencia_return lista_sentencias error
         { 
-            addError("Falta '}' de cierre de función.");
+            addError("Error Sintactico: Falta '}' de cierre de función.");
         }
     | inicio_funcion LPAREN parametros_formales error LBRACE lista_sentencias_sin_return sentencia_return lista_sentencias RBRACE
         { 
             SymbolEntry se = (SymbolEntry)$1;
             listaTiposError = false; 
-            addError("Falta ')' después de los parámetros de la función " + se.getLexeme() + ". Asumiendo inicio de bloque '{'."); 
+            addError("Error Sintactico: Falta ')' después de los parámetros de la función " + se.getLexeme() + ". Asumiendo inicio de bloque '{'."); 
         }
     ;
 
@@ -579,7 +580,7 @@ parametro_formal
             }
 
             if (!symbolTable.add(se)) {
-                yyerror("Error: El parámetro '" + se.getLexeme() + "' ya fue declarado en este ámbito.", true);
+                yyerror("Error Semantico: El parámetro '" + se.getLexeme() + "' ya fue declarado en este ámbito.", true);
             }
             
             System.out.println("Parametro (Defecto CVR): " + se.getLexeme());
@@ -602,7 +603,7 @@ parametro_formal
             }
 
             if (!symbolTable.add(se)) {
-                yyerror("Error: El parámetro '" + se.getLexeme() + "' ya fue declarado en este ámbito.", true);
+                yyerror("Error Semantico: El parámetro '" + se.getLexeme() + "' ya fue declarado en este ámbito.", true);
             }
 
             System.out.println("Parametro (" + config[0] + " " + config[1] + "): " + se.getLexeme());
@@ -668,12 +669,12 @@ sentencia_return
             
             // Validar si hay errores previos de sintaxis
             if (listaExpresionesError) { 
-                addError("Falta de ',' en argumentos de return.");
+                addError("Error Sintactico: Falta de ',' en argumentos de return.");
             }
 
             // Validar contra la firma de la función actual
             if (currentFunctionEntry == null) {
-                yyerror("Return fuera de contexto de función.");
+                yyerror("Error semantico: Return fuera de contexto de función.");
             } else {
                 List<String> tiposEsperados = currentFunctionEntry.getTiposRetorno();
                 
@@ -681,7 +682,7 @@ sentencia_return
                 // Nota: El Tema 20 habla de flexibilidad en la ASIGNACIÓN, no en la DEFINICIÓN.
                 // Por ende, un return debe coincidir con la firma.
                 if (retornosReales.size() != tiposEsperados.size()) {
-                    yyerror("Error: La función '" + currentFunctionEntry.getLexeme() + 
+                    yyerror("Error Semantico: La función '" + currentFunctionEntry.getLexeme() + 
                             "' debe retornar exactamente " + tiposEsperados.size() + 
                             " valores (firma declarada), pero retorna " + retornosReales.size() + ".", true);
                 } else {
@@ -691,7 +692,7 @@ sentencia_return
                         String tipoEsperado = tiposEsperados.get(i);
                         
                         if (!codigointermedio.TypeChecker.checkAssignment(tipoEsperado, tipoReal)) {
-                            yyerror("Error de Tipo en retorno #" + (i+1) + 
+                            yyerror("Error Semantico: Error de Tipo en retorno #" + (i+1) + 
                                     ": Se esperaba '" + tipoEsperado + 
                                     "' pero se encontró '" + tipoReal + "'.", true);
                         }
@@ -707,6 +708,12 @@ sentencia_return
             }
             listaExpresionesError = false;
         }
+    | RETURN error lista_expresiones RPAREN SEMICOLON{
+        addError("Error Sintactico: Falta de '(' en return.");
+    }
+    | RETURN LPAREN lista_expresiones error SEMICOLON{
+        addError("Error Sintactico: Falta de '(' en return.");
+    }
     ;
 
 sentencia_ejecutable
@@ -738,7 +745,7 @@ sentencia_print
        }
      | PRINT LPAREN error RPAREN SEMICOLON
        {
-            addError("Falta argumento en print.");
+            addError("Error Semantico: Falta argumento en print.");
        }
        | PRINT LPAREN expresion RPAREN error { 
         addErrorSemicolon("Error Sintáctico: Falta punto y coma ';' al final del PRINT (en función)."); 
@@ -800,7 +807,7 @@ resto_if
 
     | error 
       { 
-          addError("Falta palabra clave 'endif' o 'else' al finalizar la selección."); 
+          addError("Error Semantico: Falta palabra clave 'endif' o 'else' al finalizar la selección."); 
       }
     ;
 
@@ -816,11 +823,11 @@ sentencia_if
     
     /* --- ERRORES DEL ENCABEZADO (Estos se quedan aquí) --- */
     | IF error condicion RPAREN bloque_sentencias_ejecutables resto_if 
-        { addError("Falta paréntesis de apertura '(' en IF."); }
+        { addError("Error Sintactico: Falta paréntesis de apertura '(' en IF."); }
     | IF LPAREN condicion error bloque_sentencias_ejecutables resto_if 
-        { addError("Falta paréntesis de cierre ')' en condición."); }
+        { addError("Error Sintactico: Falta paréntesis de cierre ')' en condición."); }
     | IF LPAREN condicion RPAREN error resto_if 
-        { addError("Error en el cuerpo de la cláusula then."); }
+        { addError("Error Semantico: Error en el cuerpo de la cláusula then."); }
     ;
 
 if_simple
@@ -846,7 +853,7 @@ encabezado_for
         PolacaElement cte2 = $7;
         
          if (!id.getTipo().equals("int") && !id.getTipo().equals("untype")) {
-             yyerror("La variable del for '" + id.getLexeme() + "' debe ser de tipo 'int'.", true);
+             yyerror("Error Semantico: La variable del for '" + id.getLexeme() + "' debe ser de tipo 'int'.", true);
              errorEnProduccion = true;
         } else if (id.getTipo().equals("untype")) {
              id.setTipo("int");
@@ -931,31 +938,31 @@ sentencia_for
     }
     | FOR error identificador_destino FROM factor TO factor RPAREN bloque_sentencias_ejecutables SEMICOLON
         { 
-            addError("Falta parentesis de apertura en encabezado del for.");
+            addError("Error Sintactico: Falta parentesis de apertura en encabezado del for.");
         }
     | FOR LPAREN error FROM factor TO factor RPAREN bloque_sentencias_ejecutables SEMICOLON
         {
-            addError("Falta nombre de variable en for.");
+            addError("Error Sintactico:: Falta nombre de variable en for.");
         }
     | FOR LPAREN identificador_destino error factor TO factor RPAREN bloque_sentencias_ejecutables SEMICOLON
         { 
-            addError("Falta palabra clave 'from' en encabezado del for.");
+            addError("Error  Sintactico:: Falta palabra clave 'from' en encabezado del for.");
         }
     | FOR LPAREN identificador_destino FROM error TO factor RPAREN bloque_sentencias_ejecutables SEMICOLON
         { 
-            addError("Falta constante inicial en encabezado del for.");
+            addError("Error Sintactico: Falta constante inicial en encabezado del for.");
         }
     | FOR LPAREN identificador_destino FROM factor error factor RPAREN bloque_sentencias_ejecutables SEMICOLON
         { 
-            addError("Falta palabra clave 'to' en encabezado del for.");
+            addError("Error Sintactico: Falta palabra clave 'to' en encabezado del for.");
         }
     | FOR LPAREN identificador_destino FROM factor TO error RPAREN bloque_sentencias_ejecutables SEMICOLON
         { 
-            addError("Falta constante final en encabezado del for.");
+            addError("Error Sintactico: Falta constante final en encabezado del for.");
         }
     | FOR LPAREN identificador_destino FROM factor TO factor error bloque_sentencias_ejecutables SEMICOLON
         { 
-            addError("Falta parentesis de cierre en encabezado for.");
+            addError("Error Sintactico: Falta parentesis de cierre en encabezado for.");
         }
     | FOR error SEMICOLON 
         { 
@@ -981,15 +988,15 @@ condicion
         }
     | expresion expresion
         { 
-            addError("Falta de comparador en comparación.");
+            addError("Error Sintactico: Falta de comparador en comparación.");
         }
     | error operador_comparacion expresion
         { 
-            addError("Falta operando izquierdo en comparación.");
+            addError("Error Sintactico: Falta operando izquierdo en comparación.");
         }
     | expresion operador_comparacion error
         { 
-            addError("Falta operando derecho en comparación.");
+            addError("Error Sintactico: Falta operando derecho en comparación.");
         }
     ;
 
@@ -1011,7 +1018,7 @@ asignacion
                         errorEnProduccion = false; 
                     } else {
                     if (destino.getUso() == null && !destino.getUso().equals("variable")) {
-                        yyerror("El identificador '" + destino.getLexeme() + "' no es una variable.", true);
+                        yyerror("Error Semantico: El identificador '" + destino.getLexeme() + "' no es una variable.", true);
                     } else if(destino.getUso().equals("variable")){
                         if (destino.getTipo().equals("untype")){
                             // Si era untype, tomamos el tipo de la fuente
@@ -1020,7 +1027,7 @@ asignacion
                     }
 
                     if (!codigointermedio.TypeChecker.checkAssignment(destino.getTipo(), fuente.getResultType())) {
-                        yyerror("Tipos incompatibles: No se puede asignar '" + fuente.getResultType() + 
+                        yyerror("Error Semantico: Tipos incompatibles: No se puede asignar '" + fuente.getResultType() + 
                                 "' a la variable '" + destino.getTipo() + "'.", true);
                     }
                     
@@ -1038,10 +1045,10 @@ asignacion
         ArrayList<SymbolEntry> listaDestinos = (ArrayList<SymbolEntry>)$1;
 
         if(listaVariablesError) {
-            addError("Falta ',' en la lista de variables de la asignación.");
+            addError("Error Sintactico: Falta ',' en la lista de variables de la asignación.");
         } 
         if(listaExpresionesError) {
-            addError("Falta ',' en la lista de expresiones de la asignación.");
+            addError("Error Sintactico: Falta ',' en la lista de expresiones de la asignación.");
         } 
 
         if (!errorEnProduccion) {    
@@ -1098,7 +1105,7 @@ asignacion
                                 }
                             }
                             if (!codigointermedio.TypeChecker.checkAssignment(destino.getTipo(), tipoRetorno)) {
-                                yyerror("Error de Tipos en variable " + (i+1) + " ('" + destino.getLexeme() + 
+                                yyerror("Error Semantico: Error de Tipos en variable " + (i+1) + " ('" + destino.getLexeme() + 
                                         "'): Se esperaba compatible con '" + destino.getTipo() + 
                                         "' pero la función retorna '" + tipoRetorno + "'.", true);
                             }
@@ -1118,22 +1125,22 @@ asignacion
                 System.out.println("Línea " + lexer.getContext().getLine() + ": Asignación estándar detectada");
                 
                 if (listaDestinos.size() != listaFuentes.size()) {
-                    yyerror("Asignación múltiple: número de variables (" + listaDestinos.size() + 
-                            ") y expresiones (" + listaFuentes.size() + ") no coinciden.", true);
+                    yyerror("Error Semantico: número de variables (" + listaDestinos.size() + 
+                            ") y expresiones (" + listaFuentes.size() + ") no coinciden en la asignacion multiple.", true);
                 } else {
                     for (int i = 0; i < listaDestinos.size(); i++) {
                         SymbolEntry destino = listaDestinos.get(i);
                         PolacaElement fuente = listaFuentes.get(i);
                         
                         if (destino.getUso() == null && !destino.getUso().equals("variable")) {
-                            yyerror("El identificador '" + destino.getLexeme() + "' no es una variable.", true);
+                            yyerror("Error Semantico: El identificador '" + destino.getLexeme() + "' no es una variable.", true);
                         } else if(destino.getUso().equals("variable")){
                             if (destino.getTipo().equals("untype")){
                                 destino.setTipo("int"); 
                             }
                         }
                         if (!codigointermedio.TypeChecker.checkAssignment(destino.getTipo(), fuente.getResultType())) {
-                            yyerror("Tipos incompatibles: No se puede asignar '" + fuente.getResultType() 
+                            yyerror("Error Semantico: Tipos incompatibles, no se puede asignar '" + fuente.getResultType() 
                                     + "' a la variable '" + destino.getTipo() + "'.", true);
                         } else {
                             destino.setValue(fuente.getResultEntry().getValue());
@@ -1201,7 +1208,7 @@ expresion
             
             String tipoResultante = TypeChecker.checkArithmetic(elem1.getResultType(), elem2.getResultType());
             if (tipoResultante.equals("error")) {
-                yyerror("Tipos incompatibles para la suma tipo 1: " + elem1.getResultType() + " tipo 2: " + elem2.getResultType(), true);
+                yyerror("Error Semantico: Tipos incompatibles para la suma " + "elem1" + ": " + elem1.getResultType() + "elem2" + ": " + elem2.getResultType(), true);
                 $$ = PI().generateErrorElement("error"); 
             } else {
                 $$ = PI().generateOperation(elem1, elem2, "+", tipoResultante);
@@ -1218,7 +1225,7 @@ expresion
             
             String tipoResultante = TypeChecker.checkArithmetic(elem1.getResultType(), elem2.getResultType());
             if (tipoResultante.equals("error")) {
-                yyerror("Tipos incompatibles para la resta tipo 1: " + elem1.getResultType() + " tipo 2: " + elem2.getResultType(), true);
+                yyerror("Error Semantico: Tipos incompatibles para la resta " + "elem1" + ": " + elem1.getResultType() + "elem2" + ": " + elem2.getResultType(), true);
                 $$ = PI().generateErrorElement("error"); 
             } else {
                 $$ = PI().generateOperation(elem1, elem2, "-", tipoResultante);
@@ -1240,7 +1247,7 @@ termino
         PolacaElement fact = $3;
         String tipoResultante = TypeChecker.checkArithmetic(term.getResultType(), fact.getResultType());
         if (tipoResultante.equals("error")) {
-            yyerror("Tipos incompatibles para la multiplicación tipo 1: " + term.getResultType() + " tipo 2: " + fact.getResultType(), true);
+            yyerror("Error Semantico: Tipos incompatibles para la multiplicación " + "elem1" + ": " + term.getResultType() + "elem2" + ": " + fact.getResultType(), true);
             $$ = PI().generateErrorElement("error"); 
         } else {
             $$ = PI().generateOperation(term, fact, "*", tipoResultante);
@@ -1256,7 +1263,7 @@ termino
         PolacaElement fact = $3;
         String tipoResultante = TypeChecker.checkArithmetic(term.getResultType(), fact.getResultType());
         if (tipoResultante.equals("error")) {
-            yyerror("Tipos incompatibles para la división tipo 1: " + term.getResultType() + " tipo 2: " + fact.getResultType(), true);
+            yyerror("Error Semantico: Tipos incompatibles para la división  " + "elem1" + ": " + term.getResultType() + "elem2" + ": " + fact.getResultType(), true);
             $$ = PI().generateErrorElement("error"); 
         } else {
             $$ = PI().generateOperation(term, fact, "/", tipoResultante);
@@ -1283,17 +1290,17 @@ factor
             // --- LÓGICA DE BÚSQUEDA (Igual que en identificador_destino) ---
             if (prefijo != null) {
                 entry = symbolTable.lookup(entradaParser.getLexeme(), prefijo);
-                if (entry == null) yyerror("Variable '" + entradaParser.getLexeme() + "' no encontrada en ámbito '" + prefijo + "'.", true);
+                if (entry == null) yyerror("Error Semantico: Variable '" + entradaParser.getLexeme() + "' no encontrada en ámbito '" + prefijo + "'.", true);
             } else {
                 entry = symbolTable.lookup(entradaParser.getLexeme());
-                if (entry == null) yyerror("Variable '" + entradaParser.getLexeme() + "' no declarada.", true);
+                if (entry == null) yyerror("Error Semantico: Variable '" + entradaParser.getLexeme() + "' no declarada.", true);
             }
             
             // Generación de error o código
             if (entry == null) {
                  $$ = PI().generateErrorElement("error");
             } else if (entry.getUso().equals("funcion")) {
-                 yyerror("Uso incorrecto de función como variable.", true);
+                 yyerror("Error Semantico: Uso incorrecto de función como variable.", true);
                  $$ = PI().generateErrorElement("error");
             } else {
                  $$ = PI().generateOperand(entry);
@@ -1335,7 +1342,7 @@ invocacion_funcion
         
         // 1. Validar que sea una función
         if (!"funcion".equals(funcion.getUso())) {
-            yyerror("El identificador '" + funcion.getLexeme() + "' no es una función.", true);
+            yyerror("Error Semantico; El identificador '" + funcion.getLexeme() + "' no es una función.", true);
             $$ = PI().generateErrorElement("error");
         } else {
             @SuppressWarnings("unchecked")
@@ -1346,7 +1353,7 @@ invocacion_funcion
             
             // 2. Validar Cantidad
             if (reales.size() != formales.size()) {
-                 yyerror("La función '" + funcion.getLexeme() + "' espera " + formales.size() + 
+                 yyerror("Error Semantico: La función '" + funcion.getLexeme() + "' espera " + formales.size() + 
                          " parámetros, pero se recibieron " + reales.size() + ".", true);
             }
             
@@ -1364,7 +1371,7 @@ invocacion_funcion
                 }
 
                 if (!encontrado) {
-                    yyerror("Error: Falta el parámetro obligatorio '" + formal.getLexeme() + 
+                    yyerror("Erro Semantico: Falta el parámetro obligatorio '" + formal.getLexeme() + 
                             "' en la invocación de '" + funcion.getLexeme() + "'.", true);
                 } else {
 
@@ -1373,7 +1380,7 @@ invocacion_funcion
                     }
                     
                     if (!codigointermedio.TypeChecker.checkAssignment(formal.getTipo(), paramRealMatch.getValor().getResultType())) {
-                         yyerror("Error de Tipo en parámetro '" + formal.getLexeme() + 
+                         yyerror("Error Semantico: Error de Tipo en parámetro '" + formal.getLexeme() + 
                                  "'. Se esperaba '" + formal.getTipo() + 
                                  "' pero se recibió '" + paramRealMatch.getValor().getResultType() + "'.", true);
                     }
@@ -1430,7 +1437,7 @@ conversion_tof
             PolacaElement expr = (PolacaElement)$3;
             
             if (!expr.getResultType().equals("int")) {
-                 yyerror("Se intentó convertir a float una expresión que es de tipo '" + expr.getResultType() + "'.", true);
+                 yyerror("Error Semantico: Se intentó convertir a float una expresión que es de tipo '" + expr.getResultType() + "'.", true);
                  $$ = expr; 
             } else {
                 $$ = PI().generateTOF(expr);
@@ -1441,11 +1448,11 @@ conversion_tof
         }
     | TOF error expresion RPAREN 
         { 
-            addError("Falta el '(' en la conversión explícita.");
+            addError("Error Sintactico: Falta el '(' en la conversión explícita.");
         }
     | TOF LPAREN expresion error 
         { 
-            addError("Falta el ')' en la conversión explícita.");
+            addError("Error Sintactico: Falta el ')' en la conversión explícita.");
         }
     ;
 
@@ -1481,7 +1488,7 @@ parametro_real
     }
     | expresion error
     { 
-        addError("Sintaxis incorrecta en parámetro. Se espera 'valor -> nombre'.");
+        addError("Error Sintactico: declaracion incorrecta del parámetro real. Se espera 'valor -> nombre'.");
         $$ = new ParametroInvocacion("error", (PolacaElement)$1); // Dummy para no romper todo
     }
     ;
@@ -1564,7 +1571,7 @@ lambda_expresion
     | lambda_prefix error if_simple RBRACE 
       LPAREN lambda_argumento RPAREN
     { 
-        addError("Falta delimitador '{' de apertura en la función Lambda.");
+        addError("Error Sintactico: Falta delimitador '{' de apertura en la función Lambda.");
         symbolTable.popScope(); 
         $$ = new PolacaElement("error");
     }
@@ -1573,7 +1580,7 @@ lambda_expresion
     | lambda_prefix LBRACE if_simple error 
       LPAREN lambda_argumento RPAREN
     { 
-        addError("Falta delimitador '}' de cierre en la función Lambda.");
+        addError("Error Sintactico: Falta delimitador '}' de cierre en la función Lambda.");
         symbolTable.popScope(); 
         $$ = new PolacaElement("error");
     }
@@ -1583,7 +1590,7 @@ lambda_expresion
      RBRACE 
       LPAREN lambda_argumento error
     { 
-        addError("Falta el paréntesis de cierre ')' para la invocación Lambda.");
+        addError("Error Sintactico: Falta el paréntesis de cierre ')' para la invocación Lambda.");
         symbolTable.popScope(); 
         $$ = new PolacaElement("error");
     }

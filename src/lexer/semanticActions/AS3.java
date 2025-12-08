@@ -17,7 +17,7 @@ public class AS3 implements SemanticAction {
 
             // Chequeo de rango (16 bits)
             if (value < Short.MIN_VALUE || value > Short.MAX_VALUE) {
-                context.setToken(TokenType.ERROR, "Error Lexico en línea " + context.getLine() +
+                context.setToken(TokenType.ERROR, "Error Lexico" +
                         ": entero fuera de rango -> " + value);
             } else {
                 SymbolEntry entry = new SymbolEntry(lexeme, "int", value);

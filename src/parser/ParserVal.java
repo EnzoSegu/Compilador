@@ -6,6 +6,7 @@ import java.util.List;
 public class ParserVal
 {
     public int ival;
+    
     public double dval;
     public String sval;
     public Object obj;

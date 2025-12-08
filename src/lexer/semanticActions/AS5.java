@@ -19,7 +19,8 @@ public class AS5 implements SemanticAction {
             context.clear();}
         else{
             if(lexeme!=lexeme.toUpperCase()){
-                context.setToken(TokenType.ERROR, "Error: identificador con minúsculas en línea " + context.getLine());
+                context.setToken(TokenType.ERROR, "Error Lexico: identificador con minúsculas " +
+                        "no permitido -> " + lexeme);
                 context.clear();
             }
             else{
