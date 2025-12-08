@@ -187,7 +187,7 @@ import codigointermedio.*;
 %token CV CR LE_KW TOF
 %token ERROR EOF
 %token INT_KW FLOAT_KW STRING_KW
-%type <entry> identificador
+%type <entry> identificador ERROR
 
 %type <contextfor> encabezado_for
 %type <Polacaelement> expresion termino factor conversion_tof invocacion_funcion condicion lambda_argumento lambda_expresion
@@ -338,6 +338,9 @@ identificador
           /* RECUPERACIÓN: Asumimos que el usuario quería usar el primer ID para seguir compilando */
           $$ = $1; 
       }
+    | ID ERROR ID {
+            addError("Error Lexico: Identificador inválido '" + $1.getLexeme() + "_" + $3.getLexeme() + "'. El caracter $2.getLexeme() no está permitido en los identificadores.", true))
+    }
     ;
 identificador_completo
     : identificador

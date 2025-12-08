@@ -23,7 +23,7 @@ public final SemanticAction[][] TRANSITIONS = {
 /*3*/ {as10,as2,as2,as2,as2,as2,as2,as2,as2,as2,as2,as2,as2,as2,as2,as2,as2,as10,as10},
 /*4*/ {as10,as1,as2,as2,as2,as2,as2,as1,as2,as2,as2,as2,as2,as2,as2,as2,as2,as10,as10},
 /*5*/ {as7,as1,as7,as7,as1,as7,as7,as10,as7,as7,as7,as7,as7,as7,as7,as7,as7,as3,as7},
-/*6*/ {as1,as1,as5,as5,as5,as5,as5,as5,as5,as5,as5,as5,as1,as5,as7,as5,as5,as1,as1},
+/*6*/ {as1,as1,as5,as5,as5,as5,as5,as5,as5,as5,as5,as5,as1,as5,as5,as5,as5,as1,as1},
 /*7*/ {as10,as1,as10,as10,as10,as10,as10,as10,as10,as10,as10,as10,as10,as10,as10,as10,as2,as10,as1},
 /*8*/ {as7,as7,as7,as7,as7,as7,as7,as1,as7,as7,as7,as7,as7,as7,as7,as7,as1,as7,as7},
 /*9*/ {as7,as1,as7,as7,as7,as7,as7,as7,as7,as7,as7,as7,as7,as7,as7,as7,as7,as7,as7},

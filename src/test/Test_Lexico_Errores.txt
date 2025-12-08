@@ -38,7 +38,7 @@ PRUEBALEXICO {
     idlower := 4I; 
     
     ## ERROR LÉXICO: Carácter inválido ($) ##
-    IDBAD$CHAR := 5I;
+    IDBAD#CHAR := 5I;
     
     ## ERROR LÉXICO: Carácter inválido (_) ##
     ID_UNDERSCORE := 6I;
