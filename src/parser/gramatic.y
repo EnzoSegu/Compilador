@@ -340,7 +340,7 @@ declaracion_variable
         }
     | VAR SEMICOLON
         { 
-            addError("Error Semantico: Falta lista de variables a continuación de var.");
+            addError("Error Sintactico: Falta lista de variables a continuación de var.");
         } 
     | VAR lista_variables error
         { 
@@ -532,7 +532,7 @@ declaracion_funcion
         }
     | inicio_funcion  LPAREN error RPAREN LBRACE lista_sentencias_sin_return sentencia_return lista_sentencias RBRACE
         { 
-            addError("Error Semantico: Se tiene que tener mínimo un parámetro formal.");
+            addError("Error Sintactico: Se tiene que tener mínimo un parámetro formal.");
         }
     | inicio_funcion  LPAREN parametros_formales RPAREN error lista_sentencias_sin_return sentencia_return lista_sentencias RBRACE
         { 
@@ -784,7 +784,7 @@ sentencia_print
        }
      | PRINT LPAREN error RPAREN SEMICOLON
        {
-            addError("Error Semantico: Falta argumento en print.");
+            addError("Error Sintactico: Falta argumento en print.");
        }
        | PRINT LPAREN expresion RPAREN error { 
         addErrorSemicolon("Error Sintáctico: Falta punto y coma ';' al final del PRINT (en función)."); 
@@ -846,7 +846,7 @@ resto_if
 
     | error 
       { 
-          addError("Error Semantico: Falta palabra clave 'endif' o 'else' al finalizar la selección."); 
+          addError("Error Sintactico: Falta palabra clave 'endif' o 'else' al finalizar la selección."); 
       }
     ;
 
@@ -866,7 +866,7 @@ sentencia_if
     | IF LPAREN condicion error bloque_sentencias_ejecutables resto_if 
         { addError("Error Sintactico: Falta paréntesis de cierre ')' en condición."); }
     | IF LPAREN condicion RPAREN error resto_if 
-        { addError("Error Semantico: Error en el cuerpo de la cláusula then."); }
+        { addError("Error Sintactico: Error en el cuerpo de la cláusula then."); }
     ;
 
 if_simple
@@ -983,9 +983,9 @@ sentencia_for
         {
             addError("Error Sintactico:: Falta nombre de variable en for.");
         }
-    | FOR LPAREN identificador_destino error factor TO factor RPAREN bloque_sentencias_ejecutables SEMICOLON
+    | FOR LPAREN identificador_destino  factor TO factor RPAREN bloque_sentencias_ejecutables SEMICOLON
         { 
-            addError("Error  Sintactico:: Falta palabra clave 'from' en encabezado del for.");
+            addError("Error  Sintactico: Falta palabra clave 'from' en encabezado del for.");
         }
     | FOR LPAREN identificador_destino FROM error TO factor RPAREN bloque_sentencias_ejecutables SEMICOLON
         { 

@@ -1,9 +1,9 @@
 PROGRAMERRORESSINTACTICOS {
-    var A, B;
-    A := 10I
+    var A, B,C;
+    A:=3I;
     B:=4I;
-    int PROGRAMA(int P){
-        A:=3I;
+    if A<B){
+        A:=5I;
     }
     B:=4I;
 }
