@@ -41,6 +41,7 @@ PROGRAMAVALIDO {
     ## 6. CONVERSIÓN EXPLÍCITA TOF (Tema 29) ##
     FVAR := 10.0 + tof(A);
     
-    ## 7. EXPRESIÓN LAMBDA (Tema 27) ##
-    (int X) { if (X == 10I) print("LAMBDA OK");} (A);
+     ## 7. EXPRESIÓN LAMBDA (Tema 27) ##
+    (int X) { if (X == 10I) print("LAMBDA OK");} (A)
+  
 }

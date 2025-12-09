@@ -1,20 +1,21 @@
 
 PROGRAMERRORESSINTACTICOS {
     var A, B;
+     ## ERROR: Falta SEMICOLON al final de la asignación ##
     A := 10I
+    B := 20I;
+    
     int FUNCIONERROR(int P1) {
         var VARLOCAL;
         VARLOCAL := 1I;
         
         ## ERROR: Falta RPAREN en return ##
-        return (VARLOCAL); 
+        return (VARLOCAL; 
     }
     
-    ## ERROR: Falta SEMICOLON al final de la asignación ##
-    B := 20I
-    
+ 
     ## ERROR: Falta la palabra clave 'FROM' en el FOR ##
-    for (A from 1I to 3I) { 
+    for (A  1I to 3I) { 
         print(A);
     };
     
@@ -24,20 +25,19 @@ PROGRAMERRORESSINTACTICOS {
     };
     
     ## ERROR: Falta el LBRACE de apertura ##
-    IF (A < B) {
+    if A < B) {
         print("F"); 
-    } ENDIF; 
+    } endif; 
     
     ## ERROR: Falta la palabra clave 'ENDIF' ##
-    IF (A < B) { 
+    if (A < B) { 
         print("T"); 
-    } ELSE { 
+    } else { 
         print("F"); 
     };
     
     ## ERROR: Falta el LPAREN en TOF ##
-    A := TOF A) + 1.0; 
+    A := tof (A + 1.0;
     
     ## ERROR: Falta RPAREN de cierre de programa ##
 
-}

@@ -296,6 +296,7 @@ lista_sentencias
     | lista_sentencias error SEMICOLON 
         { 
             yyerror("Error sintáctico en sentencia. Recuperando en ';'."); 
+            yyerrflag=0;
             errorEnProduccion = false; // REINICIAR
         }
     ;
@@ -307,6 +308,7 @@ lista_sentencias_sin_return
     | lista_sentencias_sin_return error SEMICOLON 
         { 
             addError("Error en cuerpo de función. Recuperando en ';'."); 
+            yyerrflag=0;
         }
     ;
 

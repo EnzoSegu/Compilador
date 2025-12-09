@@ -28,13 +28,12 @@ import java.util.Stack;
 import lexer.*;
 import codigointermedio.*; 
 
-    /* --- Gestores Principales ---*/
-//#line 190 "gramatic.y"
+
 
 public class Parser
 {
-
-private SymbolTable symbolTable;
+    /* --- Gestores Principales ---*/
+    private SymbolTable symbolTable;
     private Map<String, PolacaInversa> polacaGenerada;
     private Stack<PolacaInversa> pilaGestoresPolaca;
     private Stack<List<Integer>> pilaSaltosBF = new Stack<>();
@@ -203,7 +202,6 @@ private SymbolTable symbolTable;
             default: return ERROR;
         }
     }
-
 boolean yydebug;        //do I want debug output?
 int yynerrs;            //number of errors so far
 int yyerrflag;          //was there an error?
@@ -899,7 +897,7 @@ final static String yyrule[] = {
 "lambda_argumento : FLOAT32",
 };
 
-//#line 1652 "gramatic.y"
+//#line 1654 "gramatic.y"
 
 /* ======= Código Java adicional (opcional) ======= */
 //#line 850 "Parser.java"
@@ -1124,17 +1122,19 @@ case 12:
 //#line 297 "gramatic.y"
 { 
             yyerror("Error sintáctico en sentencia. Recuperando en ';'."); 
+            yyerrflag=0;
             errorEnProduccion = false; /* REINICIAR*/
         }
 break;
 case 16:
-//#line 308 "gramatic.y"
+//#line 309 "gramatic.y"
 { 
             addError("Error en cuerpo de función. Recuperando en ';'."); 
+            yyerrflag=0;
         }
 break;
 case 19:
-//#line 320 "gramatic.y"
+//#line 322 "gramatic.y"
 {   ArrayList<SymbolEntry> entries = (ArrayList<SymbolEntry>)val_peek(1).obj;
             boolean redeclared = false;
 
@@ -1158,26 +1158,26 @@ case 19:
         }
 break;
 case 20:
-//#line 342 "gramatic.y"
+//#line 344 "gramatic.y"
 { 
-            addError("Error Semantico: Falta lista de variables a continuación de var.");
+            addError("Error Sintactico: Falta lista de variables a continuación de var.");
         }
 break;
 case 21:
-//#line 346 "gramatic.y"
+//#line 348 "gramatic.y"
 { 
             addErrorSemicolon("Error Sintáctico: Falta punto y coma ';' al final de la declaración de variables.");
             listaVariablesError = false; 
         }
 break;
 case 22:
-//#line 353 "gramatic.y"
+//#line 355 "gramatic.y"
 { 
           yyval.entry = val_peek(0).entry; 
       }
 break;
 case 23:
-//#line 357 "gramatic.y"
+//#line 359 "gramatic.y"
 { 
           /* Reportamos el error personalizado */
           yyerror("Error Lexico: Identificador inválido '" + val_peek(2).entry.getLexeme() + "_" + val_peek(0).entry.getLexeme() + "'. El caracter '_' no está permitido en los identificadores.", true);
@@ -1187,19 +1187,19 @@ case 23:
       }
 break;
 case 24:
-//#line 364 "gramatic.y"
+//#line 366 "gramatic.y"
 {
             yyerror("Error Lexico: Identificador inválido '" + val_peek(2).entry.getLexeme() + "_" + val_peek(0).entry.getLexeme() + "'. El caracter $2.getLexeme() no está permitido en los identificadores.", true);
     }
 break;
 case 25:
-//#line 370 "gramatic.y"
+//#line 372 "gramatic.y"
 {    
         yyval.entry = val_peek(0).entry;
     }
 break;
 case 26:
-//#line 373 "gramatic.y"
+//#line 375 "gramatic.y"
 {
         /* Caso prefijado: MAIN.A*/
         SymbolEntry scopeID = (SymbolEntry)val_peek(2).entry;
@@ -1212,7 +1212,7 @@ case 26:
     }
 break;
 case 27:
-//#line 386 "gramatic.y"
+//#line 388 "gramatic.y"
 {
             ArrayList<SymbolEntry> list = new ArrayList<>();
             SymbolEntry se = (SymbolEntry)val_peek(0).entry;
@@ -1227,7 +1227,7 @@ case 27:
         }
 break;
 case 28:
-//#line 399 "gramatic.y"
+//#line 401 "gramatic.y"
 {
             ArrayList<SymbolEntry> lista = (ArrayList<SymbolEntry>)val_peek(2).obj;
             SymbolEntry se = (SymbolEntry)val_peek(0).entry;
@@ -1243,7 +1243,7 @@ case 28:
         }
 break;
 case 29:
-//#line 413 "gramatic.y"
+//#line 415 "gramatic.y"
 { 
             addError("Error Sintáctico: Falta ',' en la declaración de variables.");
             listaVariablesError = true; 
@@ -1251,7 +1251,7 @@ case 29:
         }
 break;
 case 30:
-//#line 420 "gramatic.y"
+//#line 422 "gramatic.y"
 {
         SymbolEntry entradaParser = (SymbolEntry)val_peek(0).entry;
         String lexema = entradaParser.getLexeme();
@@ -1293,7 +1293,7 @@ case 30:
 }
 break;
 case 31:
-//#line 462 "gramatic.y"
+//#line 464 "gramatic.y"
 {
             ArrayList<SymbolEntry> list = new ArrayList<>();
             list.add((SymbolEntry)val_peek(0).entry);
@@ -1301,7 +1301,7 @@ case 31:
         }
 break;
 case 32:
-//#line 467 "gramatic.y"
+//#line 469 "gramatic.y"
 {            
             @SuppressWarnings("unchecked")
             ArrayList<SymbolEntry> lista = (ArrayList<SymbolEntry>)val_peek(2).obj;
@@ -1312,7 +1312,7 @@ case 32:
             yyval.obj = lista; }
 break;
 case 33:
-//#line 479 "gramatic.y"
+//#line 481 "gramatic.y"
 { 
           @SuppressWarnings("unchecked")
           ArrayList<SymbolEntry> tiposRetorno = (ArrayList<SymbolEntry>)val_peek(1).obj;
@@ -1345,7 +1345,7 @@ case 33:
       }
 break;
 case 34:
-//#line 512 "gramatic.y"
+//#line 514 "gramatic.y"
 {
             SymbolEntry se = (SymbolEntry)val_peek(8).entry;
             PI().generateFunctionEnd(se);
@@ -1365,31 +1365,31 @@ case 34:
         }
 break;
 case 35:
-//#line 530 "gramatic.y"
+//#line 532 "gramatic.y"
 { 
             addError("Error Sintactico: Falta nombre de función.");
         }
 break;
 case 36:
-//#line 534 "gramatic.y"
+//#line 536 "gramatic.y"
 { 
-            addError("Error Semantico: Se tiene que tener mínimo un parámetro formal.");
+            addError("Error Sintactico: Se tiene que tener mínimo un parámetro formal.");
         }
 break;
 case 37:
-//#line 538 "gramatic.y"
+//#line 540 "gramatic.y"
 { 
             addError("Error Sintactico: Falta '{' de apertura de función.");
         }
 break;
 case 38:
-//#line 542 "gramatic.y"
+//#line 544 "gramatic.y"
 { 
             addError("Error Sintactico: Falta '}' de cierre de función.");
         }
 break;
 case 39:
-//#line 546 "gramatic.y"
+//#line 548 "gramatic.y"
 { 
             SymbolEntry se = (SymbolEntry)val_peek(8).entry;
             listaTiposError = false; 
@@ -1397,7 +1397,7 @@ case 39:
         }
 break;
 case 40:
-//#line 552 "gramatic.y"
+//#line 554 "gramatic.y"
 {
         SymbolEntry se = (SymbolEntry)val_peek(6).entry;
         
@@ -1412,7 +1412,7 @@ case 40:
     }
 break;
 case 41:
-//#line 568 "gramatic.y"
+//#line 570 "gramatic.y"
 {
             ArrayList<SymbolEntry> lista = new ArrayList<>();
             lista.add((SymbolEntry)val_peek(0).obj);
@@ -1420,7 +1420,7 @@ case 41:
         }
 break;
 case 42:
-//#line 574 "gramatic.y"
+//#line 576 "gramatic.y"
 {
             @SuppressWarnings("unchecked")
             ArrayList<SymbolEntry> lista = (ArrayList<SymbolEntry>)val_peek(2).obj;
@@ -1429,32 +1429,32 @@ case 42:
         }
 break;
 case 43:
-//#line 581 "gramatic.y"
+//#line 583 "gramatic.y"
 {
            listaTiposError = true;
            errorEnProduccion = true; 
         }
 break;
 case 44:
-//#line 588 "gramatic.y"
+//#line 590 "gramatic.y"
 {yyval.obj = new SymbolEntry("int");}
 break;
 case 45:
-//#line 589 "gramatic.y"
+//#line 591 "gramatic.y"
 {yyval.obj = new SymbolEntry("float");}
 break;
 case 46:
-//#line 594 "gramatic.y"
+//#line 596 "gramatic.y"
 {yyval.obj=val_peek(0).entry;}
 break;
 case 47:
-//#line 596 "gramatic.y"
+//#line 598 "gramatic.y"
 {
             addError("Falta ',' entre parametros.");
         }
 break;
 case 49:
-//#line 604 "gramatic.y"
+//#line 606 "gramatic.y"
 { 
         if (!errorEnProduccion) { 
             SymbolEntry tipo = (SymbolEntry)val_peek(1).obj;
@@ -1481,7 +1481,7 @@ case 49:
     }
 break;
 case 50:
-//#line 629 "gramatic.y"
+//#line 631 "gramatic.y"
 { 
         if (!errorEnProduccion) { 
             SymbolEntry tipo = (SymbolEntry)val_peek(1).obj;
@@ -1506,7 +1506,7 @@ case 50:
     }
 break;
 case 51:
-//#line 652 "gramatic.y"
+//#line 654 "gramatic.y"
 {
         SymbolEntry se = (SymbolEntry)val_peek(0).entry;
         
@@ -1524,7 +1524,7 @@ case 51:
     }
 break;
 case 52:
-//#line 668 "gramatic.y"
+//#line 670 "gramatic.y"
 {
         SymbolEntry se = (SymbolEntry)val_peek(0).entry;
         
@@ -1540,33 +1540,33 @@ case 52:
     }
 break;
 case 53:
-//#line 685 "gramatic.y"
+//#line 687 "gramatic.y"
 { 
         yyval.semantica = new String[]{"cv", "le"}; 
     }
 break;
 case 54:
-//#line 689 "gramatic.y"
+//#line 691 "gramatic.y"
 { 
         yyval.semantica = new String[]{"cr", "le"}; 
     }
 break;
 case 55:
-//#line 694 "gramatic.y"
+//#line 696 "gramatic.y"
 { 
         addError("Falta la directiva 'le' después de 'cv'.");
         yyval.semantica = new String[]{"cv", "le"}; 
     }
 break;
 case 56:
-//#line 699 "gramatic.y"
+//#line 701 "gramatic.y"
 { 
         addError("Falta la directiva 'le' después de 'cr'.");
         yyval.semantica = new String[]{"cr", "le"}; 
     }
 break;
 case 57:
-//#line 706 "gramatic.y"
+//#line 708 "gramatic.y"
 {
             ArrayList<PolacaElement> retornosReales = (ArrayList<PolacaElement>)val_peek(2).obj;
             
@@ -1613,19 +1613,19 @@ case 57:
         }
 break;
 case 58:
-//#line 750 "gramatic.y"
+//#line 752 "gramatic.y"
 {
         addError("Error Sintactico: Falta de '(' en return.");
     }
 break;
 case 59:
-//#line 753 "gramatic.y"
+//#line 755 "gramatic.y"
 {
         addError("Error Sintactico: Falta de ')' en return.");
     }
 break;
 case 71:
-//#line 777 "gramatic.y"
+//#line 779 "gramatic.y"
 { 
             PolacaElement expr = (PolacaElement)val_peek(2).Polacaelement;
             PI().generatePrint(expr);
@@ -1636,25 +1636,25 @@ case 71:
        }
 break;
 case 72:
-//#line 786 "gramatic.y"
+//#line 788 "gramatic.y"
 {
-            addError("Error Semantico: Falta argumento en print.");
+            addError("Error Sintactico: Falta argumento en print.");
        }
 break;
 case 73:
-//#line 789 "gramatic.y"
+//#line 791 "gramatic.y"
 { 
         addErrorSemicolon("Error Sintáctico: Falta punto y coma ';' al final del PRINT (en función)."); 
     }
 break;
 case 76:
-//#line 799 "gramatic.y"
+//#line 801 "gramatic.y"
 { 
             yyerror("Error en bloque. Recuperando en ';'."); 
         }
 break;
 case 78:
-//#line 812 "gramatic.y"
+//#line 814 "gramatic.y"
 {
           /* Recuperamos el salto BF de la pila (guardado en sentencia_if) */
           if (!pilaSaltosBF.isEmpty()) {
@@ -1666,7 +1666,7 @@ case 78:
       }
 break;
 case 79:
-//#line 824 "gramatic.y"
+//#line 826 "gramatic.y"
 {
           /* 1. Generar BI del THEN (Saltar el Else) */
           List<Integer> listaBI = PI().generateUnconditionalJump();
@@ -1681,7 +1681,7 @@ case 79:
       }
 break;
 case 80:
-//#line 837 "gramatic.y"
+//#line 839 "gramatic.y"
 {
 
           if (!pilaSaltosElse.isEmpty()) {
@@ -1693,13 +1693,13 @@ case 80:
       }
 break;
 case 81:
-//#line 848 "gramatic.y"
+//#line 850 "gramatic.y"
 { 
-          addError("Error Semantico: Falta palabra clave 'endif' o 'else' al finalizar la selección."); 
+          addError("Error Sintactico: Falta palabra clave 'endif' o 'else' al finalizar la selección."); 
       }
 break;
 case 82:
-//#line 855 "gramatic.y"
+//#line 857 "gramatic.y"
 {
           
           PolacaElement cond = (PolacaElement)val_peek(1).Polacaelement;
@@ -1707,19 +1707,19 @@ case 82:
       }
 break;
 case 84:
-//#line 865 "gramatic.y"
+//#line 867 "gramatic.y"
 { addError("Error Sintactico: Falta paréntesis de apertura '(' en IF."); }
 break;
 case 85:
-//#line 867 "gramatic.y"
+//#line 869 "gramatic.y"
 { addError("Error Sintactico: Falta paréntesis de cierre ')' en condición."); }
 break;
 case 86:
-//#line 869 "gramatic.y"
-{ addError("Error Semantico: Error en el cuerpo de la cláusula then."); }
+//#line 871 "gramatic.y"
+{ addError("Error Sintactico: Error en el cuerpo de la cláusula then."); }
 break;
 case 87:
-//#line 874 "gramatic.y"
+//#line 876 "gramatic.y"
 { 
         PolacaElement cond = (PolacaElement)val_peek(2).Polacaelement;
         List<Integer> listaBF = cond.getFalseList();
@@ -1734,7 +1734,7 @@ case 87:
     }
 break;
 case 88:
-//#line 889 "gramatic.y"
+//#line 891 "gramatic.y"
 {
         SymbolEntry id = (SymbolEntry)val_peek(5).entry;
         PolacaElement cte1 = val_peek(3).Polacaelement; 
@@ -1797,7 +1797,7 @@ case 88:
     }
 break;
 case 89:
-//#line 952 "gramatic.y"
+//#line 954 "gramatic.y"
 {
         ForContext ctx = val_peek(4).contextfor; 
         if (ctx != null) {
@@ -1826,55 +1826,55 @@ case 89:
     }
 break;
 case 90:
-//#line 979 "gramatic.y"
+//#line 981 "gramatic.y"
 { 
             addError("Error Sintactico: Falta parentesis de apertura en encabezado del for.");
         }
 break;
 case 91:
-//#line 983 "gramatic.y"
+//#line 985 "gramatic.y"
 {
             addError("Error Sintactico:: Falta nombre de variable en for.");
         }
 break;
 case 92:
-//#line 987 "gramatic.y"
+//#line 989 "gramatic.y"
 { 
             addError("Error  Sintactico: Falta palabra clave 'from' en encabezado del for.");
         }
 break;
 case 93:
-//#line 991 "gramatic.y"
+//#line 993 "gramatic.y"
 { 
             addError("Error Sintactico: Falta constante inicial en encabezado del for.");
         }
 break;
 case 94:
-//#line 995 "gramatic.y"
+//#line 997 "gramatic.y"
 { 
             addError("Error Sintactico: Falta palabra clave 'to' en encabezado del for.");
         }
 break;
 case 95:
-//#line 999 "gramatic.y"
+//#line 1001 "gramatic.y"
 { 
             addError("Error Sintactico: Falta constante final en encabezado del for.");
         }
 break;
 case 96:
-//#line 1003 "gramatic.y"
+//#line 1005 "gramatic.y"
 { 
             addError("Error Sintactico: Falta parentesis de cierre en encabezado for.");
         }
 break;
 case 97:
-//#line 1007 "gramatic.y"
+//#line 1009 "gramatic.y"
 { 
             yyerror("Error sintáctico grave en 'for'. No se pudo analizar la estructura. Recuperando en ';'."); 
         }
 break;
 case 98:
-//#line 1014 "gramatic.y"
+//#line 1016 "gramatic.y"
 {
             PolacaElement op1 = (PolacaElement)val_peek(2).Polacaelement;
             String operator = (String)val_peek(1).sval; 
@@ -1891,49 +1891,49 @@ case 98:
         }
 break;
 case 99:
-//#line 1029 "gramatic.y"
+//#line 1031 "gramatic.y"
 { 
             addError("Error Sintactico: Falta de comparador en comparación.");
         }
 break;
 case 100:
-//#line 1033 "gramatic.y"
+//#line 1035 "gramatic.y"
 { 
             addError("Error Sintactico: Falta operando izquierdo en comparación.");
         }
 break;
 case 101:
-//#line 1037 "gramatic.y"
+//#line 1039 "gramatic.y"
 { 
             addError("Error Sintactico: Falta operando derecho en comparación.");
         }
 break;
 case 102:
-//#line 1043 "gramatic.y"
+//#line 1045 "gramatic.y"
 { yyval.sval = "=="; }
 break;
 case 103:
-//#line 1044 "gramatic.y"
+//#line 1046 "gramatic.y"
 { yyval.sval = "=!"; }
 break;
 case 104:
-//#line 1045 "gramatic.y"
+//#line 1047 "gramatic.y"
 { yyval.sval = "<";  }
 break;
 case 105:
-//#line 1046 "gramatic.y"
+//#line 1048 "gramatic.y"
 { yyval.sval = "<="; }
 break;
 case 106:
-//#line 1047 "gramatic.y"
+//#line 1049 "gramatic.y"
 { yyval.sval = ">";  }
 break;
 case 107:
-//#line 1048 "gramatic.y"
+//#line 1050 "gramatic.y"
 { yyval.sval = ">="; }
 break;
 case 108:
-//#line 1053 "gramatic.y"
+//#line 1055 "gramatic.y"
 {
             SymbolEntry destino = (SymbolEntry)val_peek(3).entry;
             PolacaElement fuente = (PolacaElement)val_peek(1).Polacaelement;
@@ -1964,7 +1964,7 @@ case 108:
         }
 break;
 case 109:
-//#line 1082 "gramatic.y"
+//#line 1084 "gramatic.y"
 {    
         ArrayList<PolacaElement> listaFuentes = (ArrayList<PolacaElement>)val_peek(1).obj;
         ArrayList<SymbolEntry> listaDestinos = (ArrayList<SymbolEntry>)val_peek(3).obj;
@@ -2083,26 +2083,27 @@ case 109:
     }
 break;
 case 110:
-//#line 1199 "gramatic.y"
+//#line 1201 "gramatic.y"
 { 
             addErrorSemicolon("Error Sintáctico: Falta punto y coma ';' al final de la asignación.");
+            yyerrflag = 0;
         }
 break;
 case 111:
-//#line 1203 "gramatic.y"
+//#line 1205 "gramatic.y"
 { 
                 addError("Error Sintáctico: Falta punto y coma ';' al final de la asignación múltiple.");
             }
 break;
 case 112:
-//#line 1210 "gramatic.y"
+//#line 1212 "gramatic.y"
 {List<PolacaElement> list = new ArrayList<>();
             list.add((PolacaElement)val_peek(0).Polacaelement);
             yyval.obj = list;
         }
 break;
 case 113:
-//#line 1214 "gramatic.y"
+//#line 1216 "gramatic.y"
 {
             @SuppressWarnings("unchecked")
             List<PolacaElement> lista = (List<PolacaElement>)val_peek(2).obj;
@@ -2114,7 +2115,7 @@ case 113:
     }
 break;
 case 114:
-//#line 1224 "gramatic.y"
+//#line 1226 "gramatic.y"
 {
             /* 1. Reportamos el error claro y específico*/
             addError("Error Sintáctico: Falta separador ',' entre las expresiones de la lista.");
@@ -2130,11 +2131,11 @@ case 114:
         }
 break;
 case 115:
-//#line 1241 "gramatic.y"
+//#line 1243 "gramatic.y"
 { yyval.Polacaelement = val_peek(0).Polacaelement; }
 break;
 case 116:
-//#line 1243 "gramatic.y"
+//#line 1245 "gramatic.y"
 {
             PolacaElement elem1 = val_peek(2).Polacaelement;
             PolacaElement elem2 = val_peek(0).Polacaelement;
@@ -2149,13 +2150,13 @@ case 116:
         }
 break;
 case 117:
-//#line 1256 "gramatic.y"
+//#line 1258 "gramatic.y"
 { 
             addError("Falta de operando en expresión.");
         }
 break;
 case 118:
-//#line 1260 "gramatic.y"
+//#line 1262 "gramatic.y"
 {
             PolacaElement elem1 = val_peek(2).Polacaelement;
             PolacaElement elem2 = val_peek(0).Polacaelement;
@@ -2170,19 +2171,19 @@ case 118:
         }
 break;
 case 119:
-//#line 1273 "gramatic.y"
+//#line 1275 "gramatic.y"
 { 
             addError("Falta de operando en expresión.");
         }
 break;
 case 120:
-//#line 1280 "gramatic.y"
+//#line 1282 "gramatic.y"
 {
         yyval.Polacaelement = val_peek(0).Polacaelement;
     }
 break;
 case 121:
-//#line 1283 "gramatic.y"
+//#line 1285 "gramatic.y"
 {
         PolacaElement term = val_peek(2).Polacaelement;
         PolacaElement fact = val_peek(0).Polacaelement;
@@ -2196,13 +2197,13 @@ case 121:
     }
 break;
 case 122:
-//#line 1295 "gramatic.y"
+//#line 1297 "gramatic.y"
 { 
             addError("Falta de operando en término.");
         }
 break;
 case 123:
-//#line 1299 "gramatic.y"
+//#line 1301 "gramatic.y"
 {
         PolacaElement term = val_peek(2).Polacaelement;
         PolacaElement fact = val_peek(0).Polacaelement;
@@ -2216,13 +2217,13 @@ case 123:
     }
 break;
 case 124:
-//#line 1311 "gramatic.y"
+//#line 1313 "gramatic.y"
 { 
             addError("Falta de operando en término.");
         }
 break;
 case 125:
-//#line 1318 "gramatic.y"
+//#line 1320 "gramatic.y"
 { 
             SymbolEntry entradaParser = (SymbolEntry)val_peek(0).entry;
             String lexema = entradaParser.getLexeme();
@@ -2255,7 +2256,7 @@ case 125:
     }
 break;
 case 126:
-//#line 1349 "gramatic.y"
+//#line 1351 "gramatic.y"
 {
             /* CORRECCIÓN: Capturar y añadir la constante a la TS*/
             SymbolEntry se_const = (SymbolEntry)val_peek(0).entry;
@@ -2264,7 +2265,7 @@ case 126:
         }
 break;
 case 127:
-//#line 1356 "gramatic.y"
+//#line 1358 "gramatic.y"
 { 
             /* CORRECCIÓN: Capturar y añadir la constante a la TS*/
             SymbolEntry se_const = (SymbolEntry)val_peek(0).entry;
@@ -2273,7 +2274,7 @@ case 127:
         }
 break;
 case 128:
-//#line 1363 "gramatic.y"
+//#line 1365 "gramatic.y"
 { 
           /* CORRECCIÓN: Capturar y añadir la constante a la TS*/
           SymbolEntry se_const = (SymbolEntry)val_peek(0).entry;
@@ -2282,15 +2283,15 @@ case 128:
       }
 break;
 case 129:
-//#line 1370 "gramatic.y"
-{ yyval.Polacaelement = val_peek(0).Polacaelement; }
-break;
-case 130:
 //#line 1372 "gramatic.y"
 { yyval.Polacaelement = val_peek(0).Polacaelement; }
 break;
+case 130:
+//#line 1374 "gramatic.y"
+{ yyval.Polacaelement = val_peek(0).Polacaelement; }
+break;
 case 131:
-//#line 1378 "gramatic.y"
+//#line 1380 "gramatic.y"
 {   
         SymbolEntry funcion = (SymbolEntry)val_peek(3).entry;
         
@@ -2385,7 +2386,7 @@ case 131:
     }
 break;
 case 132:
-//#line 1474 "gramatic.y"
+//#line 1476 "gramatic.y"
 { 
             PolacaElement expr = (PolacaElement)val_peek(1).Polacaelement;
             
@@ -2401,19 +2402,19 @@ case 132:
         }
 break;
 case 133:
-//#line 1488 "gramatic.y"
+//#line 1490 "gramatic.y"
 { 
             addError("Error Sintactico: Falta el '(' en la conversión explícita.");
         }
 break;
 case 134:
-//#line 1492 "gramatic.y"
+//#line 1494 "gramatic.y"
 { 
             addError("Error Sintactico: Falta el ')' en la conversión explícita.");
         }
 break;
 case 135:
-//#line 1499 "gramatic.y"
+//#line 1501 "gramatic.y"
 {
         ArrayList<ParametroInvocacion> lista = new ArrayList<>();
         lista.add(val_peek(0).paramInv);
@@ -2422,7 +2423,7 @@ case 135:
     }
 break;
 case 136:
-//#line 1506 "gramatic.y"
+//#line 1508 "gramatic.y"
 {
         @SuppressWarnings("unchecked")
         ArrayList<ParametroInvocacion> lista = (ArrayList<ParametroInvocacion>)val_peek(2).listParamInv;
@@ -2432,7 +2433,7 @@ case 136:
     }
 break;
 case 137:
-//#line 1517 "gramatic.y"
+//#line 1519 "gramatic.y"
 {
         PolacaElement expr = (PolacaElement)val_peek(2).Polacaelement;
         SymbolEntry idParam = (SymbolEntry)val_peek(0).entry;
@@ -2445,14 +2446,14 @@ case 137:
     }
 break;
 case 138:
-//#line 1528 "gramatic.y"
+//#line 1530 "gramatic.y"
 { 
         addError("Error Sintactico: declaracion incorrecta del parámetro real. Se espera 'valor -> nombre'.");
         yyval.paramInv = new ParametroInvocacion("error", (PolacaElement)val_peek(1).Polacaelement); /* Dummy para no romper todo*/
     }
 break;
 case 139:
-//#line 1536 "gramatic.y"
+//#line 1538 "gramatic.y"
 { 
         SymbolEntry tipoFormal = (SymbolEntry)val_peek(2).obj;
         SymbolEntry formal = (SymbolEntry)val_peek(1).entry;
@@ -2475,7 +2476,7 @@ case 139:
     }
 break;
 case 140:
-//#line 1559 "gramatic.y"
+//#line 1561 "gramatic.y"
 {
         SymbolEntry formal = currentLambdaFormal;
         PolacaElement real = (PolacaElement)val_peek(1).Polacaelement; /* lambda_argumento*/
@@ -2528,7 +2529,7 @@ case 140:
     }
 break;
 case 141:
-//#line 1611 "gramatic.y"
+//#line 1613 "gramatic.y"
 { 
         addError("Error Sintactico: Falta delimitador '{' de apertura en la función Lambda.");
         symbolTable.popScope(); 
@@ -2536,7 +2537,7 @@ case 141:
     }
 break;
 case 142:
-//#line 1620 "gramatic.y"
+//#line 1622 "gramatic.y"
 { 
         addError("Error Sintactico: Falta delimitador '}' de cierre en la función Lambda.");
         symbolTable.popScope(); 
@@ -2544,7 +2545,7 @@ case 142:
     }
 break;
 case 143:
-//#line 1630 "gramatic.y"
+//#line 1632 "gramatic.y"
 { 
         addError("Error Sintactico: Falta el paréntesis de cierre ')' para la invocación Lambda.");
         symbolTable.popScope(); 
@@ -2552,24 +2553,24 @@ case 143:
     }
 break;
 case 144:
-//#line 1639 "gramatic.y"
+//#line 1641 "gramatic.y"
 {
         yyval.Polacaelement = PI().generateOperand(val_peek(0).entry);
     }
 break;
 case 145:
-//#line 1643 "gramatic.y"
+//#line 1645 "gramatic.y"
 {
         yyval.Polacaelement = PI().generateOperand(val_peek(0).entry);
     }
 break;
 case 146:
-//#line 1647 "gramatic.y"
+//#line 1649 "gramatic.y"
 {
         yyval.Polacaelement = PI().generateOperand(val_peek(0).entry);
     }
 break;
-//#line 2512 "Parser.java"
+//#line 2514 "Parser.java"
 //########## END OF USER-SUPPLIED ACTIONS ##########
     }//switch
     //#### Now let's reduce... ####
@@ -2624,6 +2625,10 @@ public void run()
   yyparse();
 }
 //## end of method run() ########################################
+
+
+
+
 
 /**
  * Create a parser, setting the debug to true or false.
