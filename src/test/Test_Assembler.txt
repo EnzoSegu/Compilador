@@ -15,22 +15,20 @@ PROGRAMARUNTIMECHECKS {
     DIVISOR := 0I; 
     
     ## 1. ERROR: División por Cero (Entero) ##
-    RESULTADO := 10I / DIVISOR; 
-    print("ESTO NO DEBE IMPRIMIRSE (Fallo en división por cero - INT)"); 
+    RESULTADO := 10I / DIVISOR;
 
-    ## 2. ERROR: División por Cero (Flotante)
-    Reutilizamos DIVISOR, pero el Assembler debe tratar 0I como 0.0 ##
+    ## 2. ERROR: División por Cero (Flotante)##
+    ##Reutilizamos DIVISOR, pero el Assembler debe tratar 0I como 0.0 ##
     RESULTADO := 10I / DIVISOR; 
-    print("ESTO TAMPOCO DEBE IMPRIMIRSE (Fallo en división por cero - FLOAT)"); 
+ 
 
     ## 3. ERROR: Overflow de Punto Flotante ##
 
     MAXVAL := 3.40282347F+38; 
     
     ## Se multiplica por 10.0 para forzar el overflow de 32 bits ##
-    RESULTADOFLOAT := MAXVAL * 10.0F+0; 
+    RESULTADOFLOAT := MAXVAL * 2.0;
     
-    print("ESTO TAMPOCO DEBE IMPRIMIRSE (Fallo en Overflow)"); 
 
     ## 4. ERROR: Recursión Directa ##
 

@@ -21,8 +21,12 @@ public class GeneradorAssembler {
     public GeneradorAssembler(Map<String, PolacaInversa> polacaCompleta, 
                               SymbolTable symbolTable, 
                               String filename) throws IOException {
+        // Corrección de codificación: Intentar usar UTF-8 para evitar caracteres inválidos, 
+        // aunque el problema principal es el espacio no separador.
         this.polacaCompleta = polacaCompleta;
         this.symbolTable = symbolTable;
+        // Se asume que el FileWriter usará la codificación por defecto o la especificada si se usa un constructor más complejo.
+        // En muchos casos, un editor de texto resuelve el problema de los caracteres inválidos al guardar como ASCII/UTF-8.
         this.writer = new BufferedWriter(new FileWriter(filename));
     }
     
@@ -58,7 +62,6 @@ public class GeneradorAssembler {
         // 1. FORMATOS DE PRINTF (NUEVAS CONSTANTES)
         // -------------------------------------------------------------
         writer.write("\n; Formatos de printf para rutinas de I/O\n");
-        // [CORRECCIÓN FORMATO] Sin \n, el salto se gestiona con una constante aparte.
         writer.write("_FMT_INT\tDB \"%d\", 0\n"); 
         writer.write("_FMT_FLOAT\tDB \"%.10f\", 0\n"); 
         writer.write("_FMT_STRING\tDB \"%s\", 0\n"); 
@@ -76,9 +79,15 @@ public class GeneradorAssembler {
                 continue; 
             }
 
-            if ("programa".equals(uso)) {
-             emittedSymbols.add(asmName); 
-             continue;
+            // =========================================================================
+            // *** CORRECCIÓN CRÍTICA (Error A2005) ***
+            // NO se debe generar 'DD ?' para símbolos de tipo FUNCION.
+            // Si el uso es 'funcion' o 'programa', el símbolo se define en la sección .CODE
+            // con la directiva 'PROC'. Definirlo aquí causa redefinición.
+            // =========================================================================
+            if ("programa".equals(uso) || "funcion".equals(uso)) {
+               emittedSymbols.add(asmName); 
+               continue;
             }
 
             if ("variable".equals(uso) || "parametro".equals(uso) || "temporal".equals(uso) || "parametro_lambda".equals(uso)) {
@@ -89,8 +98,13 @@ public class GeneradorAssembler {
                 String lexeme = entry.getLexeme();
                 if (lexeme == null) lexeme = "";
 
+                // ** NOTA: La sustitución de caracteres especiales como 'ñ' o 'í' 
+                // ** DEBE realizarse aquí si el ensamblador no los soporta.
+                // ** El error A2044 se origina en el char ' ' (espacio no-separador),
+                // ** pero asegurar ASCII puro en strings literales es buena práctica.
+                
                 String cleanLexeme = lexeme.replaceAll("\\s", "");
-
+                
                 if (cleanLexeme.endsWith("I") || cleanLexeme.endsWith("i")) {
                     cleanLexeme = cleanLexeme.substring(0, cleanLexeme.length()-1);
                 }
@@ -112,7 +126,11 @@ public class GeneradorAssembler {
                     } else {
                         content = lexeme;
                     }
+                    // Sanitización básica: reemplazar el caracter de comilla dentro del string
                     content = content.replace("\"", "\\\"");
+                    // Si el ensamblador falla por acentos o ñ, se debe remover o reemplazar aquí:
+                    // content = content.replaceAll("[áéíóúÁÉÍÓÚñÑ]", "x"); 
+                    
                     writer.write(String.format("%s\tDB \"%s\", 0\n", asmName, content));
                     emittedSymbols.add(asmName);
                 } else {
@@ -130,7 +148,7 @@ public class GeneradorAssembler {
              emittedSymbols.add("_CTE_1");
         }
         
-        // [CORRECCIÓN FORMATO] ADICIÓN de la constante de salto de línea.
+        // ADICIÓN de la constante de salto de línea.
         if (!emittedSymbols.contains("_SALTO_LINEA")) {
              writer.write("_SALTO_LINEA\tDB 0Dh, 0Ah, 0\n"); // CR (0Dh) + LF (0Ah) + NULL (0)
              emittedSymbols.add("_SALTO_LINEA");
@@ -242,7 +260,11 @@ public class GeneradorAssembler {
     }
 
     private void translatePolaca(PolacaInversa polaca) throws IOException {
-        writer.write("\n\t; --- Traduccion Polaca Inversa (" + currentFunctionName + ") --- \n");
+        // =========================================================================
+        // *** CORRECCIÓN CARACTERES INVÁLIDOS (Error A2044) ***
+        // Se reemplaza el espacio no-separador (' ') por un espacio normal en el comentario.
+        // =========================================================================
+        writer.write("\n\t; --- Traduccion Polaca Inversa (" + currentFunctionName + ") ---\n");
         Object instruction=null;
 
         if (polaca == null || polaca.getCode() == null) {
@@ -333,7 +355,7 @@ public class GeneradorAssembler {
                     break;
             }
         }
-        writer.write("\n\t; --- Fin Traduccion Polaca Inversa --- \n");
+        writer.write("\n\t; --- Fin Traduccion Polaca Inversa ---\n");
     }
 
     private PolacaEntry safeGet(PolacaInversa polaca, int address) {
@@ -351,8 +373,9 @@ public class GeneradorAssembler {
             if (mangled == null) mangled = "anon";
         }
         return "_" + mangled.replace(":", "_").replace(".", "_").replace("\"", "").replace(" ", "_")
+             // Asegurarse de que no queden caracteres especiales que ASM no soporte en etiquetas
                 .replace("+", "_").replace("-", "_").replace("(", "_").replace(")", "_").replace(",", "_")
-                .replace("=", "_");
+                .replace("=", "_").replace(";", "_").replace("#", "_");
     }
 
     private String normalizeFuncKeyToAsm(String funcName) {
@@ -406,12 +429,20 @@ public class GeneradorAssembler {
             writer.write("\tFLD DWORD PTR " + getAsmName(op1) + "\n");
             writer.write("\tFLD DWORD PTR " + getAsmName(op2) + "\n");
             writer.write("\t" + getFpuInstruction(operator) + "\n");
-            writer.write("\t; Chequeo de Overflow/Underflow Flotante\n");
-            writer.write("\tFWAIT\n");
-            writer.write("\tFNSTSW AX\n");
-            writer.write("\tTEST AH, 0004h\n");
-            writer.write("\tJNE _RTH_OVERFLOW_FLOAT\n");
+
             writer.write("\tFSTP DWORD PTR " + getAsmName(target) + "\n");
+
+            writer.write("\t; Chequeo REAL de Overflow conversion a float32\n");
+            writer.write("\tMOV EAX, DWORD PTR " + getAsmName(target) + "\n");
+
+            // +Infinity
+            writer.write("\tCMP EAX, 07F800000h\n");
+            writer.write("\tJE _RTH_OVERFLOW_FLOAT\n");
+
+            // -Infinity
+            writer.write("\tCMP EAX, 0FF800000h\n");
+            writer.write("\tJE _RTH_OVERFLOW_FLOAT\n");
+
         } else {
             writer.write("\t; ERROR: tipo no manejado en aritmetica: " + opType + "\n");
         }
@@ -531,6 +562,7 @@ public class GeneradorAssembler {
         String targetNormalized = "_" + targetMangledName;
 
         if (currentNormalized.equals(targetNormalized)) { 
+            // Esto es un chequeo rudimentario de recursión directa.
             writer.write("\tJMP _RTH_RECURSION_DIRECTA\n");
         } else {
             writer.write("\tCALL " + targetNormalized + "\n");
@@ -555,7 +587,6 @@ public class GeneradorAssembler {
         SymbolEntry op1 = (SymbolEntry) op1Entry.getValue();
 
         writer.write("\tFILD DWORD PTR " + getAsmName(op1) + "\n");
-        // [CORRECCIÓN TOF] FWAIT asegura la sincronización de la FPU.
         writer.write("\tFWAIT\n");
         writer.write("\tFSTP DWORD PTR " + getAsmName(target) + "\n");
     }
@@ -576,17 +607,16 @@ public class GeneradorAssembler {
             // --- PASO 1: IMPRIMIR DATO ---
             if ("int".equals(op1.getTipo())) {
                 formatName = "_FMT_INT";
-                // Los enteros se pasan directamente como argumento a printf
                 writer.write("\tPUSH " + asmName + "\n"); 
                 writer.write("\tPUSH OFFSET " + formatName + "\n");
                 writer.write("\tCALL printf\n"); 
                 writer.write("\tADD ESP, 8\n"); // Cleanup: 4 bytes int + 4 bytes format
             } else if ("float".equals(op1.getTipo())) {
                 formatName = "_FMT_FLOAT";
-                // [CORRECCIÓN FLOTANTES] Extender float (32 bits) a double (64 bits) en la pila para printf
-                writer.write("\tFLD DWORD PTR " + asmName + "\n"); // Load 32-bit float to FPU (ST(0))
-                writer.write("\tSUB ESP, 8\n");                     // Reservar 8 bytes en la pila para QWORD
-                writer.write("\tFSTP QWORD PTR [ESP]\n");           // Almacenar ST(0) como 64-bit double en [ESP]
+                writer.write("\tFLD DWORD PTR " + asmName + "\n"); 
+                writer.write("\tSUB ESP, 8\n"); 
+                writer.write("\tFSTP QWORD PTR [ESP]\n"); 
+
                 
                 writer.write("\tPUSH OFFSET " + formatName + "\n");
                 writer.write("\tCALL printf\n"); 
@@ -638,7 +668,7 @@ public class GeneradorAssembler {
             case "==": jumpInstruction = "JE"; break;
             case "!=": jumpInstruction = "JNE"; break;
             case ">":  jumpInstruction = "JG"; break;
-            case "<":  jumpInstruction = "JL"; break;
+            case "<": jumpInstruction = "JL"; break;
             case ">=": jumpInstruction = "JGE"; break;
             case "<=": jumpInstruction = "JLE"; break;
             default: jumpInstruction = "JMP"; break;
