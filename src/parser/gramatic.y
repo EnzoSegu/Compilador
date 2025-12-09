@@ -548,6 +548,19 @@ declaracion_funcion
             listaTiposError = false; 
             addError("Error Sintactico: Falta ')' después de los parámetros de la función " + se.getLexeme() + ". Asumiendo inicio de bloque '{'."); 
         }
+    | inicio_funcion LPAREN parametros_formales RPAREN LBRACE lista_sentencias_sin_return RBRACE
+    {
+        SymbolEntry se = (SymbolEntry)$1;
+        
+        // ** ERROR SINTÁCTICO/OBLIGATORIEDAD **
+        addError("Error Sintactico: la sentencia RETURN es obligatoria.");
+        
+        PI().generateFunctionEnd(se);
+        symbolTable.popScope();
+        pilaGestoresPolaca.pop();
+        currentFunctionEntry = null;
+        
+    }
     ;
 
 lista_tipos

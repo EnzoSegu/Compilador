@@ -1,4 +1,9 @@
 PROGRAMERRORESSINTACTICOS {
     var A, B;
     A := 10I
+    B:=4I;
+    int PROGRAMA(int P){
+        A:=3I;
+    }
+    B:=4I;
 }
