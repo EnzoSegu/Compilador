@@ -2,9 +2,15 @@
 PROGRAMERRORESSINTACTICOS {
     var A, B;
      ## ERROR: Falta SEMICOLON al final de la asignación ##
-    A := 10I
     B := 20I;
+    A := 10I
     
+
+    ## ERROR: Falta la palabra clave 'FROM' en el FOR ##
+    for (A  1I to 3I) { 
+        print(A);
+    };
+
     int FUNCIONERROR(int P1) {
         var VARLOCAL;
         VARLOCAL := 1I;
@@ -13,11 +19,7 @@ PROGRAMERRORESSINTACTICOS {
         return (VARLOCAL; 
     }
     
- 
-    ## ERROR: Falta la palabra clave 'FROM' en el FOR ##
-    for (A  1I to 3I) { 
-        print(A);
-    };
+
     
     ## ERROR: Falta la palabra clave 'TO' en el FOR ##
     for (B from 1I 3I) { 

@@ -275,14 +275,6 @@ programa
         {
             addError("Error Sintactico: Falta nombre de programa.");
         }
-    | inicio_programa LBRACE lista_sentencias error
-        {
-            addError("Error Sintactico: Falta delimitador '}' de cierre del programa.");
-        }
-    | inicio_programa lista_sentencias error 
-        {
-            addError("Error Sintactico: Falta delimitador '{' de apertura del programa.");
-        }
     ;
     
 
@@ -293,10 +285,9 @@ lista_sentencias
         { errorEnProduccion = false; } // REINICIAR
     | lista_sentencias sentencia_ejecutable
         { errorEnProduccion = false; } // REINICIAR
-    | lista_sentencias error SEMICOLON 
+    | lista_sentencias error  
         { 
             yyerror("Error sintáctico en sentencia. Recuperando en ';'."); 
-            yyerrflag=0;
             errorEnProduccion = false; // REINICIAR
         }
     ;
@@ -305,10 +296,9 @@ lista_sentencias_sin_return
     : /* vacio */
     | lista_sentencias_sin_return sentencia_declarativa 
     | lista_sentencias_sin_return sentencia_ejecutable_sin_return 
-    | lista_sentencias_sin_return error SEMICOLON 
+    | lista_sentencias_sin_return error 
         { 
             addError("Error en cuerpo de función. Recuperando en ';'."); 
-            yyerrflag=0;
         }
     ;
 
@@ -539,10 +529,6 @@ declaracion_funcion
     | inicio_funcion  LPAREN parametros_formales RPAREN error lista_sentencias_sin_return sentencia_return lista_sentencias RBRACE
         { 
             addError("Error Sintactico: Falta '{' de apertura de función.");
-        }
-    | lista_tipos  LPAREN parametros_formales RPAREN LBRACE lista_sentencias_sin_return sentencia_return lista_sentencias error
-        { 
-            addError("Error Sintactico: Falta '}' de cierre de función.");
         }
     | inicio_funcion LPAREN parametros_formales error LBRACE lista_sentencias_sin_return sentencia_return lista_sentencias RBRACE
         { 
@@ -1200,12 +1186,16 @@ asignacion
     | identificador_destino ASSIGN_COLON expresion error
         { 
             addErrorSemicolon("Error Sintáctico: Falta punto y coma ';' al final de la asignación.");
+            yyerrflag = 0; 
+            errorEnProduccion = false;
         }
     | lista_variables_destino ASSIGN lista_expresiones error
             { 
                 addError("Error Sintáctico: Falta punto y coma ';' al final de la asignación múltiple.");
+                yyerrflag = 0; 
+                errorEnProduccion = false;
             }
-        ;  
+        ;    
 
 lista_expresiones
     : expresion
