@@ -1,9 +1,12 @@
-PROGRAMERRORESSINTACTICOS {
-    var A, B,C;
-    A:=3I;
-    B:=4I;
-    if A<B){
-        A:=5I;
-    }
-    B:=4I;
+PROGRAMAVALIDO {
+  var A,B,C;
+  A := 1I;
+  print(A);
+  B := 2I;
+  A := A + B;
+  C := "HOLA";
+  print("divis,,.dsad p3rÖ");
+  print("B ES MENOR");
+  print(C);
+  print(A);
 }

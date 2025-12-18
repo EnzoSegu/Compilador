@@ -226,9 +226,10 @@ public class GeneradorAssembler {
             this.currentFunctionName = mainFuncName;
             
             writer.write("\nstart:\n");
+            writer.write("\tFINIT\n"); // Inicializa la FPU para evitar errores de punto flotante
             writer.write(String.format("\tCALL _%s\n", mainFuncName.replace(":", "_"))); 
             writer.write("_EXIT_PROGRAM:\n");
-            writer.write("\tINVOKE ExitProcess, 0\n"); 
+            writer.write("\tINVOKE ExitProcess, 0\n");
             
             generateFunctionCode(mainFuncName, mainPolaca);
         } else {
@@ -516,9 +517,13 @@ public class GeneradorAssembler {
         String asmTarget = getAsmName(target);
         String asmSource = getAsmName(op1);
 
-        if ("int".equals(target.getTipo())) {
+        if ("int".equals(target.getTipo()) || "string".equals(target.getTipo())) {
+        if ("constante".equals(op1.getUso()) && "string".equals(op1.getTipo())) {
+            writer.write("\tMOV EAX, OFFSET " + asmSource + "\n");
+        } else {
             writer.write("\tMOV EAX, " + asmSource + "\n");
-            writer.write("\tMOV " + asmTarget + ", EAX\n");
+        }
+        writer.write("\tMOV " + asmTarget + ", EAX\n");
         } else if ("float".equals(target.getTipo())) {
             writer.write("\tFLD DWORD PTR " + asmSource + "\n");
             writer.write("\tFSTP DWORD PTR " + asmTarget + "\n");
@@ -622,14 +627,14 @@ public class GeneradorAssembler {
                 writer.write("\tCALL printf\n"); 
                 writer.write("\tADD ESP, 12\n"); // Cleanup: 8 bytes double + 4 bytes format
             } else if ("string".equals(op1.getTipo())) {
-                formatName = "_FMT_STRING";
-                writer.write("\tPUSH OFFSET " + asmName + "\n"); 
-                writer.write("\tPUSH OFFSET " + formatName + "\n");
-                writer.write("\tCALL printf\n"); 
-                writer.write("\tADD ESP, 8\n"); // Cleanup: 4 bytes pointer + 4 bytes format
+               if ("constante".equals(op1.getUso())) {
+                writer.write("\tPUSH OFFSET " + asmName + "\n"); // Es un literal "HOLA"
             } else {
-                writer.write("\t; WARNING: PRINT tipo no soportado: " + op1.getTipo() + "\n");
-                return;
+                writer.write("\tPUSH " + asmName + "\n");        // Es una variable var C
+            }
+                writer.write("\tPUSH OFFSET _FMT_STRING\n");
+            writer.write("\tCALL printf\n"); 
+            writer.write("\tADD ESP, 8\n");
             }
             
             // --- PASO 2: IMPRIMIR SALTO DE LÍNEA ---

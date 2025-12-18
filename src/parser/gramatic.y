@@ -766,15 +766,17 @@ sentencia_print
     : PRINT LPAREN expresion RPAREN SEMICOLON
        { 
             PolacaElement expr = (PolacaElement)$3;
-            if (expr.getResultEntry() == null) {
-            }else if (!symbolTable.add(expr.getResultEntry())) {}
-            else{
-            PI().generatePrint(expr);
-            
-            if (!errorEnProduccion) {
-                System.out.println("Línea " + lexer.getContext().getLine() + ": Print detectado");
+
+            // Verificamos que la expresión sea válida antes de generar
+            if (expr != null && expr.getResultEntry() != null && !"error".equals(expr.getResultType())) {
+                
+                // Agregamos la instrucción a la Polaca SIEMPRE
+                PI().generatePrint(expr); 
+                
+                if (!errorEnProduccion) {
+                    System.out.println("Línea " + lexer.getContext().getLine() + ": Print generado para " + expr.getResultEntry().getLexeme());
+                }
             }
-       }
        }
      | PRINT LPAREN error RPAREN SEMICOLON
        {
