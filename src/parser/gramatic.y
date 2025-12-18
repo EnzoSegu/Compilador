@@ -283,8 +283,10 @@ lista_sentencias
     : /* vacio */
     | lista_sentencias sentencia_declarativa
         { errorEnProduccion = false; } // REINICIAR
+
     | lista_sentencias sentencia_ejecutable
         { errorEnProduccion = false; } // REINICIAR
+
     | lista_sentencias error  
         { 
             yyerror("Error sintáctico en sentencia. Recuperando en ';'."); 
@@ -354,7 +356,7 @@ identificador
           $$ = $1; 
       }
     | ID ERROR ID {
-            yyerror("Error Lexico: Identificador inválido '" + $1.getLexeme() + "_" + $3.getLexeme() + "'. El caracter $2.getLexeme() no está permitido en los identificadores.", true));
+            yyerror("Error Lexico: Identificador inválido '" + $1.getLexeme() + "_" + $3.getLexeme() + "'. El caracter $2.getLexeme() no está permitido en los identificadores.", true);
     }
     ;
 identificador_completo
@@ -764,18 +766,22 @@ sentencia_print
     : PRINT LPAREN expresion RPAREN SEMICOLON
        { 
             PolacaElement expr = (PolacaElement)$3;
+            if (expr.getResultEntry() == null) {
+            }else if (!symbolTable.add(expr.getResultEntry())) {}
+            else{
             PI().generatePrint(expr);
             
             if (!errorEnProduccion) {
                 System.out.println("Línea " + lexer.getContext().getLine() + ": Print detectado");
             }
        }
+       }
      | PRINT LPAREN error RPAREN SEMICOLON
        {
             addError("Error Sintactico: Falta argumento en print.");
        }
        | PRINT LPAREN expresion RPAREN error { 
-        addErrorSemicolon("Error Sintáctico: Falta punto y coma ';' al final del PRINT (en función)."); 
+        addErrorSemicolon("Error Sintáctico: Falta punto y coma ';' al final del PRINT."); 
     };
 
 
@@ -1035,6 +1041,7 @@ operador_comparacion
     | GT    { $$ = ">";  }
     | GE    { $$ = ">="; }
     ;
+
 
 
 asignacion

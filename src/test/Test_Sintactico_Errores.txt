@@ -1,45 +1,13 @@
 
 PROGRAMERRORESSINTACTICOS {
-    var A, B;
-     ## ERROR: Falta SEMICOLON al final de la asignación ##
-    B := 20I;
-    A := 10I
-    
+    var B;
+    B := 20I
+    print(A);
 
-    ## ERROR: Falta la palabra clave 'FROM' en el FOR ##
-    for (A  1I to 3I) { 
-        print(A);
-    };
-
-    int FUNCIONERROR(int P1) {
-        var VARLOCAL;
-        VARLOCAL := 1I;
-        
-        ## ERROR: Falta RPAREN en return ##
-        return (VARLOCAL; 
-    }
-    
-
-    
-    ## ERROR: Falta la palabra clave 'TO' en el FOR ##
-    for (B from 1I 3I) { 
-        print(B);
-    };
-    
     ## ERROR: Falta el LBRACE de apertura ##
     if A < B) {
         print("F"); 
     } endif; 
     
-    ## ERROR: Falta la palabra clave 'ENDIF' ##
-    if (A < B) { 
-        print("T"); 
-    } else { 
-        print("F"); 
-    };
-    
-    ## ERROR: Falta el LPAREN en TOF ##
-    A := tof (A + 1.0;
-    
-    ## ERROR: Falta RPAREN de cierre de programa ##
 
+}
