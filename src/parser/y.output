@@ -1026,13 +1026,13 @@ state 68
 	identificador_destino  goto 30
 	lista_variables_destino  goto 33
 	lambda_prefix  goto 35
-	lista_sentencias_ejecutables  goto 106
-	sentencia_ejecutable  goto 107
+	sentencia_ejecutable  goto 106
 	sentencia_return  goto 40
 	asignacion  goto 41
 	sentencia_print  goto 42
 	sentencia_if  goto 43
 	sentencia_for  goto 44
+	lista_sentencias_ejecutables  goto 107
 
 
 state 69
@@ -1544,6 +1544,12 @@ state 105
 
 
 state 106
+	lista_sentencias_ejecutables : sentencia_ejecutable .  (71)
+
+	.  reduce 71
+
+
+state 107
 	lista_sentencias_ejecutables : lista_sentencias_ejecutables . sentencia_ejecutable  (72)
 	lista_sentencias_ejecutables : lista_sentencias_ejecutables . error SEMICOLON  (73)
 	sentencia_for : encabezado_for LBRACE lista_sentencias_ejecutables . RBRACE SEMICOLON  (86)
@@ -1571,12 +1577,6 @@ state 106
 	sentencia_print  goto 42
 	sentencia_if  goto 43
 	sentencia_for  goto 44
-
-
-state 107
-	lista_sentencias_ejecutables : sentencia_ejecutable .  (71)
-
-	.  reduce 71
 
 
 state 108
@@ -2366,13 +2366,13 @@ state 186
 	identificador_destino  goto 30
 	lista_variables_destino  goto 33
 	lambda_prefix  goto 35
-	lista_sentencias_ejecutables  goto 221
-	sentencia_ejecutable  goto 107
+	sentencia_ejecutable  goto 106
 	sentencia_return  goto 40
 	asignacion  goto 41
 	sentencia_print  goto 42
 	sentencia_if  goto 43
 	sentencia_for  goto 44
+	lista_sentencias_ejecutables  goto 221
 
 
 state 187

@@ -217,7 +217,7 @@ import codigointermedio.*;
 %type <contextfor> encabezado_for
 %type <Polacaelement> expresion termino factor conversion_tof invocacion_funcion condicion lambda_argumento lambda_expresion
 %type <entry> identificador_completo inicio_programa identificador_destino inicio_funcion  INT_KW FLOAT_KW parametro_formal 
-%type <obj> lista_variables tipo parametros_formales lista_expresiones lista_variables_destino lista_tipos if_simple lambda_prefix lista_sentencias_ejecutables
+%type <obj> lista_variables tipo parametros_formales lista_expresiones lista_variables_destino lista_tipos if_simple lambda_prefix 
 %type <sval> operador_comparacion
 %type <semantica> sem_pasaje
 %type <listParamInv> parametros_reales
@@ -966,7 +966,7 @@ sentencia_for
     : encabezado_for LBRACE lista_sentencias_ejecutables RBRACE SEMICOLON
     {
         ForContext ctx = $1; 
-        if(lista != null){
+       
             if(!errorfuncion){
                 if (ctx != null) {
                 PolacaElement opId = PI().generateOperand(ctx.variableControl);
@@ -989,9 +989,7 @@ sentencia_for
                     System.out.println("Línea " + lexer.getContext().getLine() + ": Fin de sentencia FOR generado. Tipo: " + (ctx.esIncremento ? "Ascendente" : "Descendente"));
                 }
             }
-        }else{
-            addError ("aca")
-        }
+    
     }
     | FOR error identificador_destino FROM factor TO factor RPAREN bloque_sentencias_ejecutables SEMICOLON
         { 
