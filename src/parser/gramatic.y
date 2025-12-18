@@ -32,6 +32,7 @@ import codigointermedio.*;
     private PolacaInversa lambdaBodyBuffer = null; 
     private PolacaInversa lambdaAssignBuffer = null; 
     private SymbolEntry currentLambdaFormal = null;
+    private boolean  errorfuncion = false;
     
     // --- LISTA DONDE SE GUARDAN LOS MENSAJES ---
     private List<String> listaErrores = new ArrayList<>();
@@ -216,7 +217,7 @@ import codigointermedio.*;
 %type <contextfor> encabezado_for
 %type <Polacaelement> expresion termino factor conversion_tof invocacion_funcion condicion lambda_argumento lambda_expresion
 %type <entry> identificador_completo inicio_programa identificador_destino inicio_funcion  INT_KW FLOAT_KW parametro_formal 
-%type <obj> lista_variables tipo parametros_formales lista_expresiones lista_variables_destino lista_tipos if_simple lambda_prefix
+%type <obj> lista_variables tipo parametros_formales lista_expresiones lista_variables_destino lista_tipos if_simple lambda_prefix lista_sentencias_ejecutables
 %type <sval> operador_comparacion
 %type <semantica> sem_pasaje
 %type <listParamInv> parametros_reales
@@ -312,6 +313,7 @@ sentencia_declarativa
 declaracion_variable
     : VAR lista_variables SEMICOLON
         {   ArrayList<SymbolEntry> entries = (ArrayList<SymbolEntry>)$2;
+            if(!errorfuncion){
             boolean redeclared = false;
 
             for (SymbolEntry entry : entries) {
@@ -331,6 +333,7 @@ declaracion_variable
                 System.out.println("Línea " + lexer.getContext().getLine() + ": Declaración de variables registrada en TS.");
             }
             listaVariablesError = false; 
+            }
         }
     | VAR SEMICOLON
         { 
@@ -500,30 +503,35 @@ inicio_funcion
 
           $$ = $2; 
       }
+    | lista_tipos error{
+        addError("Error Sintactico: Falta nombre de funcion");
+        errorfuncion=true;
+        $$ = null;
+    }
     ;
 declaracion_funcion
     :inicio_funcion LPAREN parametros_formales RPAREN LBRACE lista_sentencias_sin_return sentencia_return lista_sentencias RBRACE
         {
             SymbolEntry se = (SymbolEntry)$1;
-            PI().generateFunctionEnd(se);
+                if(se == null){
+                errorfuncion= false;
+            }else{
+                PI().generateFunctionEnd(se);
 
-            if (listaTiposError) {
-                addError("Error Sintactico: Falta ',' en lista de tipos de retorno.");
-            }
+                if (listaTiposError) {
+                    addError("Error Sintactico: Falta ',' en lista de tipos de retorno.");
+                }
             
-            if (!errorEnProduccion) { 
-                System.out.println("Línea " + lexer.getContext().getLine() + ": Declaracion de funcion detectada " + se.getLexeme());
+                if (!errorEnProduccion) { 
+                    System.out.println("Línea " + lexer.getContext().getLine() + ": Declaracion de funcion detectada " + se.getLexeme());
             }
-            symbolTable.popScope();
-            pilaGestoresPolaca.pop();
+                symbolTable.popScope();
+                pilaGestoresPolaca.pop();
 
-            listaTiposError = false; 
-            currentFunctionEntry = null;
+                listaTiposError = false; 
+                currentFunctionEntry = null;
         }
-    | inicio_funcion error LPAREN parametros_formales RPAREN LBRACE lista_sentencias_sin_return sentencia_return lista_sentencias RBRACE
-        { 
-            addError("Error Sintactico: Falta nombre de función.");
-        }
+    }
     | inicio_funcion  LPAREN error RPAREN LBRACE lista_sentencias_sin_return sentencia_return lista_sentencias RBRACE
         { 
             addError("Error Sintactico: Se tiene que tener mínimo un parámetro formal.");
@@ -695,7 +703,7 @@ sentencia_return
     : RETURN LPAREN lista_expresiones RPAREN SEMICOLON
         {
             ArrayList<PolacaElement> retornosReales = (ArrayList<PolacaElement>)$3;
-            
+            if (!errorfuncion){
             // Validar si hay errores previos de sintaxis
             if (listaExpresionesError) { 
                 addError("Error Sintactico: Falta de ',' en argumentos de return.");
@@ -737,6 +745,7 @@ sentencia_return
             }
             listaExpresionesError = false;
         }
+    }
     | RETURN lista_expresiones RPAREN SEMICOLON{
         addError("Error Sintactico: Falta de '(' en return.");
     }
@@ -766,7 +775,7 @@ sentencia_print
     : PRINT LPAREN expresion RPAREN SEMICOLON
        { 
             PolacaElement expr = (PolacaElement)$3;
-
+            if(!errorfuncion){
             // Verificamos que la expresión sea válida antes de generar
             if (expr != null && expr.getResultEntry() != null && !"error".equals(expr.getResultType())) {
                 
@@ -777,7 +786,8 @@ sentencia_print
                     System.out.println("Línea " + lexer.getContext().getLine() + ": Print generado para " + expr.getResultEntry().getLexeme());
                 }
             }
-       }
+        }
+        }
      | PRINT LPAREN error RPAREN SEMICOLON
        {
             addError("Error Sintactico: Falta argumento en print.");
@@ -789,8 +799,11 @@ sentencia_print
 
 
 lista_sentencias_ejecutables
-    : 
-    | lista_sentencias_ejecutables sentencia_ejecutable 
+    : sentencia_ejecutable
+    | lista_sentencias_ejecutables sentencia_ejecutable
+    {
+
+    }
     | lista_sentencias_ejecutables error SEMICOLON 
         { 
             yyerror("Error en bloque. Recuperando en ';'."); 
@@ -953,25 +966,31 @@ sentencia_for
     : encabezado_for LBRACE lista_sentencias_ejecutables RBRACE SEMICOLON
     {
         ForContext ctx = $1; 
-        if (ctx != null) {
-        PolacaElement opId = PI().generateOperand(ctx.variableControl);
-        
-        SymbolEntry unoConst = new SymbolEntry("1", "constante", "int");
-        PolacaElement opUno = PI().generateOperand(unoConst);
-        
-        String opAritmetico = ctx.esIncremento ? "+" : "-";
-        
-        PolacaElement resultado = PI().generateOperation(opId, opUno, opAritmetico, "int");
-        PI().generateAssignment(ctx.variableControl, resultado);
-        
-        List<Integer> biList = PI().generateUnconditionalJump();
-        PI().backpatch(biList, ctx.labelInicio);
-        
-        int finDelFor = PI().getCurrentAddress();
-        PI().backpatch(ctx.listaBF, finDelFor);
-        }   
-        if (!errorEnProduccion) {
-             System.out.println("Línea " + lexer.getContext().getLine() + ": Fin de sentencia FOR generado. Tipo: " + (ctx.esIncremento ? "Ascendente" : "Descendente"));
+        if(lista != null){
+            if(!errorfuncion){
+                if (ctx != null) {
+                PolacaElement opId = PI().generateOperand(ctx.variableControl);
+                
+                SymbolEntry unoConst = new SymbolEntry("1", "constante", "int");
+                PolacaElement opUno = PI().generateOperand(unoConst);
+                
+                String opAritmetico = ctx.esIncremento ? "+" : "-";
+                
+                PolacaElement resultado = PI().generateOperation(opId, opUno, opAritmetico, "int");
+                PI().generateAssignment(ctx.variableControl, resultado);
+                
+                List<Integer> biList = PI().generateUnconditionalJump();
+                PI().backpatch(biList, ctx.labelInicio);
+                
+                int finDelFor = PI().getCurrentAddress();
+                PI().backpatch(ctx.listaBF, finDelFor);
+                }   
+                if (!errorEnProduccion) {
+                    System.out.println("Línea " + lexer.getContext().getLine() + ": Fin de sentencia FOR generado. Tipo: " + (ctx.esIncremento ? "Ascendente" : "Descendente"));
+                }
+            }
+        }else{
+            addError ("aca")
         }
     }
     | FOR error identificador_destino FROM factor TO factor RPAREN bloque_sentencias_ejecutables SEMICOLON
@@ -1053,6 +1072,7 @@ asignacion
     : identificador_destino ASSIGN_COLON expresion SEMICOLON {
             SymbolEntry destino = (SymbolEntry)$1;
             PolacaElement fuente = (PolacaElement)$3;
+            if(!errorfuncion){
             if (errorEnProduccion) {
                         errorEnProduccion = false; 
                     } else {
@@ -1078,11 +1098,12 @@ asignacion
                     }
                 }
         }
+    }
 | lista_variables_destino ASSIGN lista_expresiones SEMICOLON
     {    
         ArrayList<PolacaElement> listaFuentes = (ArrayList<PolacaElement>)$3;
         ArrayList<SymbolEntry> listaDestinos = (ArrayList<SymbolEntry>)$1;
-
+        if(errorfuncion){
         if(listaVariablesError) {
             addError("Error Sintactico: Falta ',' en la lista de variables de la asignación.");
         } 
@@ -1194,6 +1215,7 @@ asignacion
         
         listaVariablesError = false;
         listaExpresionesError = false;
+        }
     }
     | identificador_destino ASSIGN_COLON expresion error
         { 
@@ -1244,10 +1266,10 @@ expresion
     : termino 
         { $$ = $1; }
     | expresion PLUS termino
-        {
+        {   
             PolacaElement elem1 = $1;
             PolacaElement elem2 = $3;
-            
+            if (!errorfuncion){
             String tipoResultante = TypeChecker.checkArithmetic(elem1.getResultType(), elem2.getResultType());
             if (tipoResultante.equals("error")) {
                 yyerror("Error Semantico: Tipos incompatibles para la suma " + "elem1" + ": " + elem1.getResultType() + "elem2" + ": " + elem2.getResultType(), true);
@@ -1255,6 +1277,7 @@ expresion
             } else {
                 $$ = PI().generateOperation(elem1, elem2, "+", tipoResultante);
             }
+        }
         }
     | expresion PLUS error
         { 
@@ -1264,13 +1287,14 @@ expresion
             {
             PolacaElement elem1 = $1;
             PolacaElement elem2 = $3;
-            
+            if (!errorfuncion){
             String tipoResultante = TypeChecker.checkArithmetic(elem1.getResultType(), elem2.getResultType());
             if (tipoResultante.equals("error")) {
                 yyerror("Error Semantico: Tipos incompatibles para la resta " + "elem1" + ": " + elem1.getResultType() + "elem2" + ": " + elem2.getResultType(), true);
                 $$ = PI().generateErrorElement("error"); 
             } else {
                 $$ = PI().generateOperation(elem1, elem2, "-", tipoResultante);
+            }
             }
         }
     | expresion MINUS error
@@ -1287,12 +1311,14 @@ termino
     | termino STAR factor{
         PolacaElement term = $1;
         PolacaElement fact = $3;
+        if (!errorfuncion){
         String tipoResultante = TypeChecker.checkArithmetic(term.getResultType(), fact.getResultType());
         if (tipoResultante.equals("error")) {
             yyerror("Error Semantico: Tipos incompatibles para la multiplicación " + "elem1" + ": " + term.getResultType() + "elem2" + ": " + fact.getResultType(), true);
             $$ = PI().generateErrorElement("error"); 
         } else {
             $$ = PI().generateOperation(term, fact, "*", tipoResultante);
+        }
         }
     }
     | termino STAR error
@@ -1303,12 +1329,14 @@ termino
     {
         PolacaElement term = $1;
         PolacaElement fact = $3;
+        if (!errorfuncion){
         String tipoResultante = TypeChecker.checkArithmetic(term.getResultType(), fact.getResultType());
         if (tipoResultante.equals("error")) {
             yyerror("Error Semantico: Tipos incompatibles para la división  " + "elem1" + ": " + term.getResultType() + "elem2" + ": " + fact.getResultType(), true);
             $$ = PI().generateErrorElement("error"); 
         } else {
             $$ = PI().generateOperation(term, fact, "/", tipoResultante);
+        }
         }
     }
     | termino SLASH error
@@ -1320,8 +1348,10 @@ termino
 factor
     : identificador_completo
         { 
+            
             SymbolEntry entradaParser = (SymbolEntry)$1;
             String lexema = entradaParser.getLexeme();
+            if (!errorfuncion){
             if(lexema.equals("ERROR_IGNORE")){
                 $$=PI().generateErrorElement("error");
             }
@@ -1349,6 +1379,7 @@ factor
             }
         }
     }
+        }
 | INT16 
         {
             // CORRECCIÓN: Capturar y añadir la constante a la TS
