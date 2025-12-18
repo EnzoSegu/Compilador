@@ -1,14 +1,20 @@
 package Assembler;
 import lexer.*;
 import java.io.BufferedWriter;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.util.Map;
 import java.util.Set;
 import java.util.HashSet; 
 
 import codigointermedio.PolacaEntry;
 import codigointermedio.PolacaInversa;
+
+import java.io.OutputStreamWriter;
+import java.io.FileOutputStream;
+import java.nio.charset.Charset;
 
 public class GeneradorAssembler {
     
@@ -19,16 +25,19 @@ public class GeneradorAssembler {
     private int printfFormatCounter = 0; 
     
     public GeneradorAssembler(Map<String, PolacaInversa> polacaCompleta, 
-                              SymbolTable symbolTable, 
-                              String filename) throws IOException {
-        // Corrección de codificación: Intentar usar UTF-8 para evitar caracteres inválidos, 
-        // aunque el problema principal es el espacio no separador.
-        this.polacaCompleta = polacaCompleta;
-        this.symbolTable = symbolTable;
-        // Se asume que el FileWriter usará la codificación por defecto o la especificada si se usa un constructor más complejo.
-        // En muchos casos, un editor de texto resuelve el problema de los caracteres inválidos al guardar como ASCII/UTF-8.
-        this.writer = new BufferedWriter(new FileWriter(filename));
-    }
+                          SymbolTable symbolTable, 
+                          String filename) throws IOException {
+    this.polacaCompleta = polacaCompleta;
+    this.symbolTable = symbolTable;
+    
+    // CAMBIO CRÍTICO: Usar Cp850 para que los acentos se vean bien en el CMD de Windows
+    this.writer = new BufferedWriter(
+        new OutputStreamWriter(
+            new FileOutputStream(filename), 
+            Charset.forName("Cp850")
+        )
+    );
+}
     
     public void generate() throws IOException {
         try {
@@ -356,6 +365,10 @@ public class GeneradorAssembler {
                     break;
             }
         }
+        int finalAddr = polaca.getCode().size() + 1; 
+        writer.write("L_" + finalAddr + ":\n");
+        writer.write("\tNOP ; Etiqueta de fin de bloque\n");
+
         writer.write("\n\t; --- Fin Traduccion Polaca Inversa ---\n");
     }
 
@@ -366,19 +379,25 @@ public class GeneradorAssembler {
     }
 
     private String getAsmName(SymbolEntry entry) {
-        if (entry == null) return "NULL_ENTRY";
-        String mangled = entry.getMangledName();
-        
-        if (mangled == null || mangled.isEmpty()) {
-            mangled = entry.getLexeme();
-            if (mangled == null) mangled = "anon";
-        }
-        return "_" + mangled.replace(":", "_").replace(".", "_").replace("\"", "").replace(" ", "_")
-             // Asegurarse de que no queden caracteres especiales que ASM no soporte en etiquetas
-                .replace("+", "_").replace("-", "_").replace("(", "_").replace(")", "_").replace(",", "_")
-                .replace("=", "_").replace(";", "_").replace("#", "_");
+    if (entry == null) return "NULL_ENTRY";
+    String mangled = entry.getMangledName();
+    
+    if (mangled == null || mangled.isEmpty()) {
+        mangled = entry.getLexeme();
+        if (mangled == null) mangled = "anon";
     }
 
+    // 1. Aplicamos tus reemplazos manuales primero
+    String name = mangled.replace(":", "_").replace(".", "_").replace("\"", "").replace(" ", "_")
+                 .replace("+", "_").replace("-", "_").replace("(", "_").replace(")", "_").replace(",", "_")
+                 .replace("=", "_").replace(";", "_").replace("#", "_");
+
+    // 2. REEMPLAZO FINAL: Cualquier cosa que no sea letra básica, número o _ se vuelve _
+    // Esto quita acentos, diéresis y basura de los nombres de etiquetas
+    name = name.replaceAll("[^a-zA-Z0-9_]", "_");
+
+    return "_" + name;
+}
     private String normalizeFuncKeyToAsm(String funcName) {
         if (funcName == null) return "";
         return "_" + funcName.replace(":", "_");

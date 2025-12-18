@@ -4,24 +4,28 @@ PROGRAMAVALIDO {
     int FUNCIONCOMPLEJA(cr le int PCR, cv le float PCV) {
         var VARLOCAL;
         VARLOCAL := 1I;
+        PCV:=10.0;
+        print(PCV);
     
         ## 1. SENTENCIA RETURN CON INVOCACIÓN TOF ##
         return (VARLOCAL + 1I); 
         }
-    var A, B, RESULTADO, CONTADOR;
+    var A, B, RESULTADO, CONTADOR,F;
     var FVAR, IVAR;
     
     A := 10I;
     B := 20I;
-    
+    F:=3.5;
     ## 1. ASIGNACIÓN SIMPLE Y EXPRESIONES ARITMÉTICAS ##
     RESULTADO := A + B * 5I; 
     
     ## 2. INVOCACIÓN CON PASAJE DE PARÁMETROS NOMBRADO ##
-    RESULTADO := FUNCIONCOMPLEJA(A->PCR, 1.0->PCV);
+    RESULTADO := FUNCIONCOMPLEJA(A->PCR, F->PCV);
+
+    print(F);
     
     ## 3. ASIGNACIÓN MÚLTIPLE (Tema 16 y 19) ##
-    A, B = 5I, 6I;
+    A, B = 10I, 6I;
     
     ## 4. CLAUSULA IF-ELSE-ENDIF ##
     if (A < B) { 

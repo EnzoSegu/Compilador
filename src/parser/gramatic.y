@@ -887,6 +887,7 @@ encabezado_for
         PolacaElement cte1 = $5; 
         PolacaElement cte2 = $7;
         
+    if (symbolTable.containsInCurrentScope(id.getLexeme())){
          if (!id.getTipo().equals("int") && !id.getTipo().equals("untype")) {
              yyerror("Error Semantico: La variable del for '" + id.getLexeme() + "' debe ser de tipo 'int'.", true);
              errorEnProduccion = true;
@@ -899,7 +900,7 @@ encabezado_for
         int val1 = 0;
         int val2 = 0;
         try {
-             // [CORRECCIÓN APLICADA AQUÍ] Eliminamos el sufijo 'I' o 'i' antes de parsear.
+             /* [CORRECCIÓN APLICADA AQUÍ] Eliminamos el sufijo 'I' o 'i' antes de parsear.*/
              String lexeme1 = cte1.getResultEntry().getLexeme().replaceAll("[Ii]", "");
              String lexeme2 = cte2.getResultEntry().getLexeme().replaceAll("[Ii]", "");
              
@@ -907,7 +908,7 @@ encabezado_for
              val2 = Integer.parseInt(lexeme2);
              
         } catch(Exception e) {
-             // Esto se dejaría para errores no capturados por el léxico.
+             /* Esto se dejaría para errores no capturados por el léxico.*/
         }
         
         PolacaElement opCte1 = PI().generateOperand(cte1.getResultEntry());
@@ -918,13 +919,13 @@ encabezado_for
         String operador;
         boolean esIncremento;
         
-        // La lógica de comparación val1 <= val2 determina si es ascendente o descendente.
+        /* La lógica de comparación val1 <= val2 determina si es ascendente o descendente.*/
         if (val1 <= val2) {
             operador = "<=";
             esIncremento = true;
         } else {
-            operador = ">="; // Correcto para descendente
-            esIncremento = false; // Correcto para decremento (-)
+            operador = ">="; /* Correcto para descendente*/
+            esIncremento = false; /* Correcto para decremento (-)*/
         }
         
         PolacaElement exprId = PI().generateOperand(id);
@@ -940,6 +941,11 @@ encabezado_for
         );
         
         yyval.contextfor = nuevoContexto;
+        }
+    }
+    else {
+            addError("Error Semantico: La variable del for '" + id.getLexeme() + "' no está declarada en el ámbito actual.");
+            yyval.contextfor = null; 
         }
     }
 
@@ -963,10 +969,7 @@ sentencia_for
         
         int finDelFor = PI().getCurrentAddress();
         PI().backpatch(ctx.listaBF, finDelFor);
-        }
-        else {
-            addError("Error interno: Contexto del For no disponible en finalización.");
-        }    
+        }   
         if (!errorEnProduccion) {
              System.out.println("Línea " + lexer.getContext().getLine() + ": Fin de sentencia FOR generado. Tipo: " + (ctx.esIncremento ? "Ascendente" : "Descendente"));
         }
