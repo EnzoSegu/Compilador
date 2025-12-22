@@ -883,9 +883,16 @@ sentencia_print
     };
 
 
+
 lista_sentencias_ejecutables
     : sentencia_ejecutable
     | lista_sentencias_ejecutables sentencia_ejecutable
+    {
+    }
+    | lista_sentencias_ejecutables error SEMICOLON 
+        { 
+            yyerror("Error en bloque. Recuperando en ';'."); 
+        }
     ;
 
 bloque_sentencias_ejecutables
@@ -899,14 +906,6 @@ bloque_sentencias_ejecutables
             addError("Error Sintáctico: Error en el contenido del bloque o cuerpo vacío.");
             yyerrflag = 0;
         }
-    |  lista_sentencias_ejecutables RBRACE
-    {
-        addError("Error Sintáctico: falta llave de apertura en el bloque");
-    }
-    | LBRACE lista_sentencias_ejecutables error
-    {
-        addError("Error Sintactico: falta llave de cierre en el bloque");
-    }
     ;
 
 fin_else
