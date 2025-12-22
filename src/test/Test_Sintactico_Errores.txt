@@ -1,16 +1,13 @@
 
 PROGRAMERRORESSINTACTICOS {
     var A,B, RESULTADO ;
-    A  := 20I;
-    B  := 3.0;
-   int FUNCIONCOMPLEJA(cr le int PCR, cv le float PCV) {
-        var VARLOCAL;
-        VARLOCAL := 1I;
-        PCV:=10.0;
-        print(PCV);
+    A , B  = 20I , 3I;
+       
+    if (A < B) { 
+        print("A ES MENOR"); 
+    }else
+    {
+        print("A ES MAYOR"); 
+    };
     
-        ## 1. SENTENCIA RETURN CON INVOCACIÓN TOF ##
-        return (VARLOCAL + 1I); 
-        }
-    RESULTADO := FUNCIONCOMPLEJA(->PCR, B->PCV);
 }

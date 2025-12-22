@@ -74,7 +74,7 @@ import codigointermedio.*;
     private void addError(String mensaje) {
         removeLastGenericError();
         int linea=lexer.getContext().getLine();
-        String error = "Línea " + linea + "" + mensaje;
+        String error = "Línea " + linea + " " + mensaje;
         listaErrores.add(error);
         errorEnProduccion = true;
     }
@@ -880,7 +880,6 @@ lista_sentencias_ejecutables
     : sentencia_ejecutable
     | lista_sentencias_ejecutables sentencia_ejecutable
     {
-
     }
     | lista_sentencias_ejecutables error SEMICOLON 
         { 
@@ -892,6 +891,31 @@ bloque_sentencias_ejecutables
     : LBRACE lista_sentencias_ejecutables RBRACE
     ;
 
+fin_else
+    : ENDIF SEMICOLON
+      {
+          /* CASO CORRECTO */
+          if (!pilaSaltosElse.isEmpty()) {
+              List<Integer> listaBI = pilaSaltosElse.pop();
+              int target_endif = PI().getCurrentAddress();
+              PI().backpatch(listaBI, target_endif);
+          }
+          if (!errorEnProduccion) System.out.println("IF-ELSE detectado correctamente.");
+      }
+    | SEMICOLON
+      {
+          /* CASO ERROR: Falta 'ENDIF' pero hay ';' */
+          addWarning("Error Sintactico: Falta palabra clave 'endif' al finalizar la selección (else).");
+          
+          /* Lógica de recuperación: Hacemos el backpatch igual para que el programa siga funcionando */
+          if (!pilaSaltosElse.isEmpty()) {
+              List<Integer> listaBI = pilaSaltosElse.pop();
+              int target_endif = PI().getCurrentAddress();
+              PI().backpatch(listaBI, target_endif);
+          }
+          if (!errorEnProduccion) System.out.println("IF-ELSE detectado (recuperado por falta de ENDIF).");
+      }
+    ;
 
 resto_if
     /* OPCIÓN A: IF SIMPLE (Termina con ENDIF) */
@@ -905,10 +929,20 @@ resto_if
           }
           if (!errorEnProduccion) System.out.println("IF Simple detectado.");
       }
-
+    | SEMICOLON
+      {
+        addWarning ("Error Sintactico: Falta palabra clave 'endif' al finalizar la selección.");
+          /* Recuperamos el salto BF de la pila (guardado en sentencia_if) */
+          if (!pilaSaltosBF.isEmpty()) {
+              List<Integer> listaBF = pilaSaltosBF.pop();
+              int target_endif = PI().getCurrentAddress();
+              PI().backpatch(listaBF, target_endif);
+          }
+          if (!errorEnProduccion) System.out.println("IF Simple detectado.");
+      }
     /* OPCIÓN B: IF-ELSE (Sigue con ELSE) */
     | ELSE 
-      {
+      {     
           /* 1. Generar BI del THEN (Saltar el Else) */
           List<Integer> listaBI = PI().generateUnconditionalJump();
           pilaSaltosElse.push(listaBI);
@@ -920,7 +954,7 @@ resto_if
               PI().backpatch(listaBF, target_else);
           }
       }
-      bloque_sentencias_ejecutables ENDIF SEMICOLON
+     bloque_sentencias_ejecutables fin_else
       {
 
           if (!pilaSaltosElse.isEmpty()) {
@@ -930,7 +964,6 @@ resto_if
           }
           if (!errorEnProduccion) System.out.println("IF-ELSE detectado.");
       }
-
     | error 
       { 
           addError("Error Sintactico: Falta palabra clave 'endif' o 'else' al finalizar la selección."); 
@@ -950,7 +983,7 @@ sentencia_if
     /* --- ERRORES DEL ENCABEZADO (Estos se quedan aquí) --- */
     | IF error condicion RPAREN bloque_sentencias_ejecutables resto_if 
         { addError("Error Sintactico: Falta paréntesis de apertura '(' en IF."); }
-    | IF LPAREN condicion error bloque_sentencias_ejecutables resto_if 
+    | IF LPAREN condicion  bloque_sentencias_ejecutables resto_if 
         { addError("Error Sintactico: Falta paréntesis de cierre ')' en condición."); }
     | IF LPAREN condicion RPAREN error resto_if 
         { addError("Error Sintactico: Error en el cuerpo de la cláusula then."); }
@@ -978,7 +1011,7 @@ encabezado_for
         PolacaElement cte1 = $5; 
         PolacaElement cte2 = $7;
         
-    if (symbolTable.containsInCurrentScope(id.getLexeme())){
+    if (symbolTable.lookup(id.getLexeme()) != null) {
          if (!id.getTipo().equals("int") && !id.getTipo().equals("untype")) {
              yyerror("Error Semantico: La variable del for '" + id.getLexeme() + "' debe ser de tipo 'int'.", true);
              errorEnProduccion = true;
@@ -1256,10 +1289,16 @@ asignacion
                         SymbolEntry destino = listaDestinos.get(i);
                         PolacaElement fuente = listaFuentes.get(i);
                         
-                        if ("untype".equals(destino.getTipo())) destino.setTipo("int");
+                        if ("untype".equals(destino.getTipo())){
+                            destino.setTipo(fuente.getResultType());
+                        }
                         
                         if (codigointermedio.TypeChecker.checkAssignment(destino.getTipo(), fuente.getResultType())) {
                             PI().generateAssignment(destino, fuente);
+                        }
+                        else{
+                             yyerror("Error Semantico: Tipos incompatibles: No se puede asignar '" + fuente.getResultType() + 
+                                "' a la variable '" + destino.getTipo() + "'.", true);
                         }
                     }
                 }
@@ -1347,6 +1386,7 @@ asignacion
                             if (codigointermedio.TypeChecker.checkAssignment(destino.getTipo(), tipoRetorno)) {
                                 PI().generateAssignment(destino, fuente);
                             }
+                            
                         }
                     }
                 }
@@ -1359,10 +1399,16 @@ asignacion
                         SymbolEntry destino = listaDestinos.get(i);
                         PolacaElement fuente = listaFuentes.get(i);
                         
-                        if ("untype".equals(destino.getTipo())) destino.setTipo("int");
+                        if ("untype".equals(destino.getTipo())){
+                            destino.setTipo(fuente.getResultType());
+                        }
                         
                         if (codigointermedio.TypeChecker.checkAssignment(destino.getTipo(), fuente.getResultType())) {
                             PI().generateAssignment(destino, fuente);
+                        }
+                        else{
+                             yyerror("Error Semantico: Tipos incompatibles: No se puede asignar '" + fuente.getResultType() + 
+                                "' a la variable '" + destino.getTipo() + "'.", true);
                         }
                     }
                 }
