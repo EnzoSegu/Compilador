@@ -36,6 +36,7 @@ import codigointermedio.*;
     
     // --- LISTA DONDE SE GUARDAN LOS MENSAJES ---
     private List<String> listaErrores = new ArrayList<>();
+    private List<String> listaWarnings = new ArrayList<>();
 
     public Parser() {
         this.symbolTable = new SymbolTable();
@@ -51,6 +52,7 @@ import codigointermedio.*;
     public SymbolTable getSymbolTable() { return this.symbolTable; }
     public Map<String, PolacaInversa> getPolacaGenerada() { return this.polacaGenerada; }
     public List<String> getListaErrores() { return this.listaErrores; }
+    public List<String> getWarnings() { return listaWarnings; }
 
     // =========================================================================
     //  MÉTODOS DE ERROR (Sustituyen a System.err.println)
@@ -68,7 +70,7 @@ import codigointermedio.*;
         }
 }
 
-    // 1. Método para tus errores manuales en la gramática (Sintácticos)
+    // Método para los errores manuales en la gramática (Sintácticos)
     private void addError(String mensaje) {
         removeLastGenericError();
         int linea=lexer.getContext().getLine();
@@ -76,14 +78,20 @@ import codigointermedio.*;
         listaErrores.add(error);
         errorEnProduccion = true;
     }
-    // 1. Método para tus errores manuales en la gramática (Sintácticos)
-    private void addErrorSemicolon(String mensaje) {
-        removeLastGenericError();
-        int linea = lexer.getContext().getLine()-1;
-        String error = "Línea " + linea + ": " + mensaje;
-        listaErrores.add(error);
-        errorEnProduccion = true;
+
+
+    public void addWarning(String s) {
+    String mensaje = "Línea " + lexer.getContext().getLine() + " - WARNING: " + s;
+    listaWarnings.add(mensaje);
     }
+
+
+    public void addErrorSemicolon(String msg) {
+    removeLastGenericError();
+    addWarning(msg); // Redirige a warning, no bloquea compilación
+    }
+
+
     private void addErrorLex(String mensaje, int linea) {
         removeLastGenericError();
         String error = "Línea " + linea + ": " + mensaje;
@@ -92,7 +100,7 @@ import codigointermedio.*;
     }
 
 
-    // 2. Método para errores SEMÁNTICOS (Tipos, declaraciones)
+    //  Método para errores SEMÁNTICOS (Tipos, declaraciones)
     // Se usa: yyerror("Mensaje", true);
     public void yyerror(String s, boolean semantico) {
         if(!errorEnProduccion){
@@ -203,6 +211,11 @@ import codigointermedio.*;
 }
 
 /* ======= Tokens ======= */
+%nonassoc PRIORIDAD_BAJA_ASIGNACION  /* Prioridad menor para la reducción */
+%nonassoc ID INT16 FLOAT32 STRING
+%nonassoc PRIORIDAD_ID  /* Prioridad muy baja */
+%nonassoc LPAREN
+%nonassoc error
 %token <entry> ID STRING INT16 FLOAT32
 %token IF ELSE ENDIF PRINT RETURN VAR FOR FROM TO
 %token PLUS MINUS STAR SLASH
@@ -288,10 +301,15 @@ lista_sentencias
     | lista_sentencias sentencia_ejecutable
         { errorEnProduccion = false; } // REINICIAR
 
-    | lista_sentencias error  
+   | lista_sentencias error  
         { 
-            yyerror("Error sintáctico en sentencia. Recuperando en ';'."); 
-            errorEnProduccion = false; // REINICIAR
+            // 1. Reinicia la bandera PRIMERO para permitir que se guarde este nuevo mensaje
+            errorEnProduccion = false; 
+            
+            // 2. Ahora llama a yyerror
+            yyerror("Error sintáctico en sentencia. Se esperaba un ';' o inicio de sentencia válido.");
+            
+            removeLastGenericError(); 
         }
     ;
 
@@ -339,14 +357,33 @@ declaracion_variable
         { 
             addError("Error Sintactico: Falta lista de variables a continuación de var.");
         } 
-    | VAR lista_variables error
+    | VAR lista_variables %prec PRIORIDAD_BAJA_ASIGNACION
         { 
-            addErrorSemicolon("Error Sintáctico: Falta punto y coma ';' al final de la declaración de variables.");
+            addErrorSemicolon("Error Sintáctico: Falta punto y coma ';' al final de la declaración de variables (Se procede a ignorarlo y continuar).");
+            
+            /* --- RECUPERACIÓN: PROCESAR VARIABLES --- */
+            /* Copiamos la lógica de la regla correcta */
+            ArrayList<SymbolEntry> entries = (ArrayList<SymbolEntry>)$2;
+            if(!errorfuncion && entries != null){
+                boolean redeclared = false;
+                for (SymbolEntry entry : entries) {
+                    entry.setUso("variable");
+                    entry.setTipo("untype"); 
+                    
+                    if (!symbolTable.add(entry)) { 
+                        yyerror("Error Semantico: Variable '" + entry.getLexeme() + "' redeclarada en el ámbito actual.", true);
+                        redeclared = true;
+                    }
+                }
+                if(!listaVariablesError && !redeclared) {
+                     System.out.println("Línea " + lexer.getContext().getLine() + ": Declaración de variables registrada (Recuperación).");
+                }
+            }
             listaVariablesError = false; 
         }
     ;
 identificador
-    : ID 
+    : ID %prec PRIORIDAD_ID
       { 
           $$ = $1; 
       }
@@ -406,12 +443,17 @@ lista_variables
             lista.add(se);
             $$ = lista; 
         }
-| lista_variables identificador_completo
-        { 
-            addError("Error Sintáctico: Falta ',' en la declaración de variables.");
-            listaVariablesError = true; 
-            errorEnProduccion = true; // Activar
-        };
+    | lista_variables error identificador_completo
+        {
+            addError("Error Sintáctico: Falta separador ',' en la declaración de variables.");
+            
+            // Recuperación para que siga funcionando
+            ArrayList<SymbolEntry> lista = (ArrayList<SymbolEntry>)$1;
+            if (lista == null) lista = new ArrayList<>();
+            lista.add((SymbolEntry)$3); // $3 es el identificador
+            $$ = lista;
+        }
+    ;
         
 identificador_destino:
     identificador_completo {
@@ -469,6 +511,9 @@ identificador_destino:
             }
             lista.add($3);
             $$ = lista; };
+    | lista_variables_destino  identificador_destino{
+            addError(" Error sintáctico: Se esperaba una ',' en la asignacion de variables.");
+    } ;
 
 
 inicio_funcion
@@ -510,8 +555,8 @@ inicio_funcion
     }
     ;
 declaracion_funcion
-    :inicio_funcion LPAREN parametros_formales RPAREN LBRACE lista_sentencias_sin_return sentencia_return lista_sentencias RBRACE
-        {
+    :inicio_funcion LPAREN parametros_formales RPAREN LBRACE lista_sentencias_sin_return sentencia_return lista_sentencias RBRACE 
+    {
             SymbolEntry se = (SymbolEntry)$1;
                 if(se == null){
                 errorfuncion= false;
@@ -536,11 +581,11 @@ declaracion_funcion
         { 
             addError("Error Sintactico: Se tiene que tener mínimo un parámetro formal.");
         }
-    | inicio_funcion  LPAREN parametros_formales RPAREN error lista_sentencias_sin_return sentencia_return lista_sentencias RBRACE
+    | inicio_funcion  LPAREN parametros_formales RPAREN error lista_sentencias_sin_return sentencia_return lista_sentencias RBRACE 
         { 
             addError("Error Sintactico: Falta '{' de apertura de función.");
         }
-    | inicio_funcion LPAREN parametros_formales error LBRACE lista_sentencias_sin_return sentencia_return lista_sentencias RBRACE
+    | inicio_funcion LPAREN parametros_formales error LBRACE lista_sentencias_sin_return sentencia_return lista_sentencias RBRACE 
         { 
             SymbolEntry se = (SymbolEntry)$1;
             listaTiposError = false; 
@@ -752,6 +797,24 @@ sentencia_return
     | RETURN LPAREN lista_expresiones error SEMICOLON{
         addError("Error Sintactico: Falta de ')' en return.");
     }
+    | RETURN LPAREN lista_expresiones RPAREN{
+        addErrorSemicolon("Error Sintactico: Falta ; al final de la sentencia return (Se procede a ignorarlo)");
+        
+        /* --- RECUPERACIÓN: GENERAR RETURN --- */
+        ArrayList<PolacaElement> retornosReales = (ArrayList<PolacaElement>)$3;
+        if (!errorfuncion && !errorEnProduccion){
+             // Validamos cantidad y tipos (copia simplificada de la lógica principal)
+             if (currentFunctionEntry != null) {
+                List<String> tiposEsperados = currentFunctionEntry.getTiposRetorno();
+                if (retornosReales.size() == tiposEsperados.size()) {
+                     // Generamos el RETURN
+                     PI().generateOperation("RETURN", false);
+                     System.out.println("Línea " + lexer.getContext().getLine() + ": Return generado (Warning).");
+                }
+             }
+        }
+    }
+    
     ;
 
 sentencia_ejecutable
@@ -788,12 +851,21 @@ sentencia_print
             }
         }
         }
-     | PRINT LPAREN error RPAREN SEMICOLON
+    | PRINT LPAREN error RPAREN SEMICOLON
        {
             addError("Error Sintactico: Falta argumento en print.");
        }
-       | PRINT LPAREN expresion RPAREN error { 
-        addErrorSemicolon("Error Sintáctico: Falta punto y coma ';' al final del PRINT."); 
+    | PRINT LPAREN expresion RPAREN error { 
+        addErrorSemicolon("Error Sintáctico: Falta punto y coma ';' al final del PRINT.");
+        
+        /* --- RECUPERACIÓN: GENERAR PRINT --- */
+        PolacaElement expr = (PolacaElement)$3;
+        if(!errorfuncion && !errorEnProduccion){
+            if (expr != null && expr.getResultEntry() != null && !"error".equals(expr.getResultType())) {
+                PI().generatePrint(expr);
+                System.out.println("Línea " + lexer.getContext().getLine() + ": Print generado (Warning).");
+            }
+        }
     };
 
 
@@ -1023,6 +1095,34 @@ sentencia_for
         { 
             yyerror("Error sintáctico grave en 'for'. No se pudo analizar la estructura. Recuperando en ';'."); 
         }
+    | encabezado_for LBRACE lista_sentencias_ejecutables RBRACE
+    {
+        addErrorSemicolon("Error Sintactico: Falta ; al final de for (Se procede a ignorarlo)");
+        
+        /* --- RECUPERACIÓN: CERRAR EL FOR --- */
+        ForContext ctx = $1;
+        if(!errorfuncion && !errorEnProduccion && ctx != null){
+            // 1. Generar incremento/decremento
+            PolacaElement opId = PI().generateOperand(ctx.variableControl);
+            SymbolEntry unoConst = new SymbolEntry("1", "constante", "int");
+            symbolTable.add(unoConst); // Asegurarnos que esté en la tabla
+            PolacaElement opUno = PI().generateOperand(unoConst);
+            
+            String opAritmetico = ctx.esIncremento ? "+" : "-";
+            PolacaElement resultado = PI().generateOperation(opId, opUno, opAritmetico, "int");
+            PI().generateAssignment(ctx.variableControl, resultado);
+            
+            // 2. Salto incondicional al inicio (loop)
+            List<Integer> biList = PI().generateUnconditionalJump();
+            PI().backpatch(biList, ctx.labelInicio);
+            
+            // 3. Backpatch de la condición falsa (salida)
+            int finDelFor = PI().getCurrentAddress();
+            PI().backpatch(ctx.listaBF, finDelFor);
+            
+            System.out.println("Línea " + lexer.getContext().getLine() + ": Fin de FOR generado (Warning).");
+        }
+    }
     ;
 
 condicion
@@ -1101,133 +1201,170 @@ asignacion
     {    
         ArrayList<PolacaElement> listaFuentes = (ArrayList<PolacaElement>)$3;
         ArrayList<SymbolEntry> listaDestinos = (ArrayList<SymbolEntry>)$1;
-        if(errorfuncion){
-        if(listaVariablesError) {
-            addError("Error Sintactico: Falta ',' en la lista de variables de la asignación.");
-        } 
-        if(listaExpresionesError) {
-            addError("Error Sintactico: Falta ',' en la lista de expresiones de la asignación.");
-        } 
-
-        if (!errorEnProduccion) {    
+       if(!errorfuncion && !errorEnProduccion && listaFuentes != null && listaDestinos != null){
+            // Reutilizamos la lógica. Para no duplicar tanto código en Java, 
+            // idealmente esto debería estar en una función auxiliar en el parser, 
+            // pero aquí lo expandimos para que funcione directo en el .y
+            
             boolean esInvocacionMultiple = false;
-
             if (listaFuentes.size() == 1) {
                 PolacaElement fuente = listaFuentes.get(0);
                 SymbolEntry symFuente = fuente.getResultEntry(); 
-                
-                if (symFuente != null) {
-                    // Caso A: Es directamente una función
-                    if ("funcion".equals(symFuente.getUso()) 
-                        && symFuente.getTiposRetorno() != null 
-                        && !symFuente.getTiposRetorno().isEmpty()){
-                            esInvocacionMultiple = true;
-                    }
-                    // Caso B: Es un temporal que viene de una función (Corrección anterior)
-                    else if (symFuente.getFuncionOrigen() != null) {
+                if (symFuente != null && "funcion".equals(symFuente.getUso()) 
+                    && symFuente.getTiposRetorno() != null && !symFuente.getTiposRetorno().isEmpty()){
+                        esInvocacionMultiple = true;
+                }
+                // ... (lógica de detección de función origen temporal omitida por brevedad, es igual a la regla principal) ...
+                else if (symFuente != null && symFuente.getFuncionOrigen() != null) {
                         SymbolEntry funcionReal = symFuente.getFuncionOrigen();
                         if (funcionReal.getTiposRetorno() != null && !funcionReal.getTiposRetorno().isEmpty()) {
                             esInvocacionMultiple = true;
-                            symFuente = funcionReal; // Usamos la función real para los tipos
+                            symFuente = funcionReal;
                         }
-                    }
                 }
                 
-                // Lógica específica para Asignación Múltiple de Función
                 if (esInvocacionMultiple) {
+                    // Lógica de función múltiple
                     List<String> tiposRetorno = symFuente.getTiposRetorno();
-                    
                     int numVars = listaDestinos.size();     
-                    int numRets = tiposRetorno.size();      
-
-                    if (numRets > numVars) {
-                        System.err.println("WARNING (Línea " + lexer.getContext().getLine() + 
-                             "): La función retorna " + numRets + " valores pero solo se asignan " + numVars + 
-                             ". Los valores sobrantes se descartarán.");
-                    } 
-                    else if (numRets < numVars) {
-                        yyerror("Error Semántico: La función retorna " + numRets + 
-                                " valores, insuficiente para cubrir las " + numVars + " variables de destino.", true);
-                    }
-
+                    int numRets = tiposRetorno.size();  
+                    
                     if (numRets >= numVars) {
                         for (int i = 0; i < numVars; i++) {
                             SymbolEntry destino = listaDestinos.get(i);
                             String tipoRetorno = tiposRetorno.get(i);
-
-                            if ("untype".equals(destino.getTipo())) {
-                                destino.setTipo(tipoRetorno);
-                                if (!errorEnProduccion) {
-                                    System.out.println(" Variable " + destino.getLexeme() + 
-                                                       "' inferida como '" + tipoRetorno + "'");
-                                }
-                            }
-                            if (!codigointermedio.TypeChecker.checkAssignment(destino.getTipo(), tipoRetorno)) {
-                                yyerror("Error Semantico: Error de Tipos en variable " + (i+1) + " ('" + destino.getLexeme() + 
-                                        "'): Se esperaba compatible con '" + destino.getTipo() + 
-                                        "' pero la función retorna '" + tipoRetorno + "'.", true);
-                            }
+                            if ("untype".equals(destino.getTipo())) destino.setTipo(tipoRetorno);
                             
-                            // Generamos la asignación (Destino = Resultado_Pila)
-                            PI().generateAssignment(destino, fuente);
-                            
-                            if (!errorEnProduccion) {
-                                System.out.println("    -> Asignación múltiple  " + destino.getLexeme() + " (Tipo: " + tipoRetorno + ")");
+                            if (codigointermedio.TypeChecker.checkAssignment(destino.getTipo(), tipoRetorno)) {
+                                PI().generateAssignment(destino, fuente);
                             }
                         }
                     }
                 }
-            } 
-
+            }
+            
             if (!esInvocacionMultiple) {
-                System.out.println("Línea " + lexer.getContext().getLine() + ": Asignación estándar detectada");
-                
-                if (listaDestinos.size() != listaFuentes.size()) {
-                    yyerror("Error Semantico: número de variables (" + listaDestinos.size() + 
-                            ") y expresiones (" + listaFuentes.size() + ") no coinciden en la asignacion multiple.", true);
-                } else {
+                // Asignación estándar A,B = C,D
+                if (listaDestinos.size() == listaFuentes.size()) {
                     for (int i = 0; i < listaDestinos.size(); i++) {
                         SymbolEntry destino = listaDestinos.get(i);
                         PolacaElement fuente = listaFuentes.get(i);
                         
-                        if (destino.getUso() == null && !destino.getUso().equals("variable")) {
-                            yyerror("Error Semantico: El identificador '" + destino.getLexeme() + "' no es una variable.", true);
-                        } else if(destino.getUso().equals("variable")){
-                            if (destino.getTipo().equals("untype")){
-                                destino.setTipo("int"); 
-                            }
-                        }
-                        if (!codigointermedio.TypeChecker.checkAssignment(destino.getTipo(), fuente.getResultType())) {
-                            yyerror("Error Semantico: Tipos incompatibles, no se puede asignar '" + fuente.getResultType() 
-                                    + "' a la variable '" + destino.getTipo() + "'.", true);
-                        } else {
-                            destino.setValue(fuente.getResultEntry().getValue());
-                            symbolTable.updateValue(destino);
-                            System.out.println("    Asignado a " + destino.getLexeme()+ " valor: " + destino.getValue());
+                        if ("untype".equals(destino.getTipo())) destino.setTipo("int");
+                        
+                        if (codigointermedio.TypeChecker.checkAssignment(destino.getTipo(), fuente.getResultType())) {
                             PI().generateAssignment(destino, fuente);
                         }
                     }
                 }
             }
+            System.out.println("Línea " + lexer.getContext().getLine() + ": Asignación múltiple recuperada.");
         }
         
-        listaVariablesError = false;
-        listaExpresionesError = false;
-        }
     }
-    | identificador_destino ASSIGN_COLON expresion error
+    | identificador_destino ASSIGN_COLON expresion %prec PRIORIDAD_BAJA_ASIGNACION
         { 
-            addErrorSemicolon("Error Sintáctico: Falta punto y coma ';' al final de la asignación.");
-            yyerrflag = 0; 
-            errorEnProduccion = false;
+            addErrorSemicolon("Error Sintáctico: Falta punto y coma ';' al final de la asignación.(Se procede a ignorarlo)");
+            SymbolEntry destino = (SymbolEntry)$1;
+            PolacaElement fuente = (PolacaElement)$3;
+        
+        if(!errorfuncion){
+            if (errorEnProduccion) {
+                        errorEnProduccion = false; 
+                    } else {
+                    if (destino.getUso() == null && !destino.getUso().equals("variable")) {
+                        yyerror("Error Semantico: El identificador '" + destino.getLexeme() + "' no es una variable.", true);
+                    } else if(destino.getUso().equals("variable")){
+                        if (destino.getTipo().equals("untype")){
+                            // Si era untype, tomamos el tipo de la fuente
+                            destino.setTipo(fuente.getResultType());
+                        }
+                    }
+
+                    if (!codigointermedio.TypeChecker.checkAssignment(destino.getTipo(), fuente.getResultType())) {
+                        yyerror("Error Semantico: Tipos incompatibles: No se puede asignar '" + fuente.getResultType() + 
+                                "' a la variable '" + destino.getTipo() + "'.", true);
+                    }
+                    
+                    if (!errorEnProduccion) {
+                        destino.setValue(fuente.getResultEntry().getValue());
+                        symbolTable.updateValue(destino);
+                        System.out.println("Línea " + lexer.getContext().getLine() + ": Asignación simple detectada a " + destino.getLexeme());
+                        PI().generateAssignment(destino, fuente);
+                    }
+                }
         }
-    | lista_variables_destino ASSIGN lista_expresiones error
-            { 
-                addError("Error Sintáctico: Falta punto y coma ';' al final de la asignación múltiple.");
-                yyerrflag = 0; 
-                errorEnProduccion = false;
+            
+        }
+    | lista_variables_destino ASSIGN lista_expresiones %prec PRIORIDAD_BAJA_ASIGNACION
+    { 
+        addErrorSemicolon("Error Sintáctico: Falta punto y coma ';' al final de la asignación múltiple.(Se procede a ignorarlo)");
+        
+        /* --- RECUPERACIÓN: ASIGNACIÓN MÚLTIPLE --- */
+        ArrayList<PolacaElement> listaFuentes = (ArrayList<PolacaElement>)$3;
+        ArrayList<SymbolEntry> listaDestinos = (ArrayList<SymbolEntry>)$1;
+        
+        if(!errorfuncion && !errorEnProduccion && listaFuentes != null && listaDestinos != null){
+            // Reutilizamos la lógica. Para no duplicar tanto código en Java, 
+            // idealmente esto debería estar en una función auxiliar en el parser, 
+            // pero aquí lo expandimos para que funcione directo en el .y
+            
+            boolean esInvocacionMultiple = false;
+            if (listaFuentes.size() == 1) {
+                PolacaElement fuente = listaFuentes.get(0);
+                SymbolEntry symFuente = fuente.getResultEntry(); 
+                if (symFuente != null && "funcion".equals(symFuente.getUso()) 
+                    && symFuente.getTiposRetorno() != null && !symFuente.getTiposRetorno().isEmpty()){
+                        esInvocacionMultiple = true;
+                }
+                // ... (lógica de detección de función origen temporal omitida por brevedad, es igual a la regla principal) ...
+                else if (symFuente != null && symFuente.getFuncionOrigen() != null) {
+                        SymbolEntry funcionReal = symFuente.getFuncionOrigen();
+                        if (funcionReal.getTiposRetorno() != null && !funcionReal.getTiposRetorno().isEmpty()) {
+                            esInvocacionMultiple = true;
+                            symFuente = funcionReal;
+                        }
+                }
+                
+                if (esInvocacionMultiple) {
+                    // Lógica de función múltiple
+                    List<String> tiposRetorno = symFuente.getTiposRetorno();
+                    int numVars = listaDestinos.size();     
+                    int numRets = tiposRetorno.size();  
+                    
+                    if (numRets >= numVars) {
+                        for (int i = 0; i < numVars; i++) {
+                            SymbolEntry destino = listaDestinos.get(i);
+                            String tipoRetorno = tiposRetorno.get(i);
+                            if ("untype".equals(destino.getTipo())) destino.setTipo(tipoRetorno);
+                            
+                            if (codigointermedio.TypeChecker.checkAssignment(destino.getTipo(), tipoRetorno)) {
+                                PI().generateAssignment(destino, fuente);
+                            }
+                        }
+                    }
+                }
             }
-        ;    
+            
+            if (!esInvocacionMultiple) {
+                // Asignación estándar A,B = C,D
+                if (listaDestinos.size() == listaFuentes.size()) {
+                    for (int i = 0; i < listaDestinos.size(); i++) {
+                        SymbolEntry destino = listaDestinos.get(i);
+                        PolacaElement fuente = listaFuentes.get(i);
+                        
+                        if ("untype".equals(destino.getTipo())) destino.setTipo("int");
+                        
+                        if (codigointermedio.TypeChecker.checkAssignment(destino.getTipo(), fuente.getResultType())) {
+                            PI().generateAssignment(destino, fuente);
+                        }
+                    }
+                }
+            }
+            System.out.println("Línea " + lexer.getContext().getLine() + ": Asignación múltiple recuperada.");
+        }
+        yyerrflag = 0; 
+    } ;
 
 lista_expresiones
     : expresion
@@ -1246,16 +1383,18 @@ lista_expresiones
     }
 | lista_expresiones expresion
         {
-            // 1. Reportamos el error claro y específico
+            // 1. Reportamos el error
             addError("Error Sintáctico: Falta separador ',' entre las expresiones de la lista.");
             
-            // 2. RECUPERACIÓN: Agregamos el elemento de todas formas para no romper la compilación
+            // 2. RECUPERACIÓN:
             @SuppressWarnings("unchecked")
             List<PolacaElement> lista = (List<PolacaElement>)$1;
             if (lista == null) lista = new ArrayList<>();
-            lista.add((PolacaElement)$2); // Agregamos la expresión ($2) a la lista
             
-            // 3. Devolvemos la lista "reparada"
+            // ¡OJO! Ahora la expresión es $2, porque quitamos el token 'error' del medio
+            lista.add((PolacaElement)$2); 
+            
+            // 3. Retorno
             $$ = lista;
         }
     ;

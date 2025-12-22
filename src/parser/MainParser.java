@@ -13,7 +13,7 @@ public class MainParser {
         if (args.length < 1) {
             System.out.println("Uso: java parser.MainParser <ruta_del_archivo_fuente>");
             return;
-        }
+        } 
         // Usar el primer argumento como ruta del archivo
         String filePath = args[0]; 
         // --- FIN DE MODIFICACIÓN ---
@@ -53,19 +53,38 @@ public class MainParser {
             return;
         }
 
-
-        // =================================================================
-        // FASE 2: ANÁLISIS SINTÁCTICO Y GENERACIÓN DE CÓDIGO (TP3/TP4)
-        // =================================================================
+         System.out.println("\n");
+         System.out.println ("=================================================================");
+         System.out.println ( "ANALISIS SINTACTICO Y SEMANTICO ");
+         System.out.println ("=================================================================");
         
+
         // Se vuelve a abrir el archivo, ya que el primer escaneo consumió el stream.
         try (FileReader parserReader = new FileReader(filePath)) { 
             
             Scanner scanner = new Scanner(parserReader);
             Parser parser = new Parser();
             parser.setScanner(scanner);
+            
             // Ejecutar análisis sintáctico/semántico y generación de código
             parser.yyparse();
+
+            // ---------------------------------------------------------
+            //  NUEVO: MOSTRAR WARNINGS (Siempre, haya error o no)
+            // ---------------------------------------------------------
+            // Asumimos que implementaste el método getWarnings() en tu Parser 
+            // como acordamos en el paso anterior.
+            List<String> warnings = parser.getWarnings(); 
+
+            if (!warnings.isEmpty()) {
+                System.out.println("\n[!] ADVERTENCIAS (WARNINGS):");
+                System.out.println("--------------------------");
+                for (String warning : warnings) {
+                    System.out.println(" -> " + warning);
+                }
+                System.out.println("--------------------------");
+            }
+            // ---------------------------------------------------------
 
             List<String> errores = parser.getListaErrores();
 
@@ -79,13 +98,15 @@ public class MainParser {
                 System.err.println("NO se generó código intermedio debido a los errores.");
             } 
             else {
-                System.out.println("\n[OK] Compilación exitosa sin errores semánticos ni sintácticos.");
+                // Si solo hubo warnings (o nada), entramos aquí para generar el ejecutable
+                System.out.println("\n[OK] Compilación exitosa" + 
+                    (warnings.isEmpty() ? "." : " (con WARNINGS)."));
 
                 // REQUISITO 4: Contenido de la Tabla de Símbolos
                 Map<String, PolacaInversa> polacas = parser.getPolacaGenerada();
                 
                 System.out.println("\n=================================================");
-                System.out.println("         CONTENIDO DE LA TABLA DE SÍMBOLOS");
+                System.out.println("         CONTENIDO DE LA TABLA DE SIMBOLOS");
                 System.out.println("=================================================");
                 System.out.println(parser.getSymbolTable().toString());
 
@@ -95,7 +116,6 @@ public class MainParser {
                 System.out.println("=================================================");
                 for (Map.Entry<String, PolacaInversa> entry : polacas.entrySet()) {
                     System.out.println("\n>>> BLOQUE: " + entry.getKey());
-                    // Asumimos que PolacaInversa.toString() ya incluye la cabecera Dir | Instrucción
                     System.out.print(entry.getValue().toString()); 
                 }
                 
@@ -104,14 +124,12 @@ public class MainParser {
                 System.out.println("        INICIO DE GENERACIÓN DE ASSEMBLER");
                 System.out.println("=================================================");
                 
-                // Asegúrate de que GeneradorAssembler está disponible en el classpath
                 Assembler.GeneradorAssembler assembler = new Assembler.GeneradorAssembler(
                     polacas,
                     parser.getSymbolTable(),
                     asmFilePath
                 );
                 
-                // Escribir el archivo output.asm
                 assembler.generate(); 
                 
                 System.out.println("\n[OK] Código Assembler generado correctamente en: " + asmFilePath);

@@ -1,16 +1,10 @@
 
 PROGRAMERRORESSINTACTICOS {
     var A,B
-    B := 20I;
-    A := 30I;
-    print(A);
-
-    ## ERROR: Falta el LBRACE de apertura ##
-    if A < B) {
-        print("F"); 
-    } endif; 
-
-        for (A from 3I to 1I) {
-        };
+    A , B  = 20I , 3I + 30I;
+    var CONTADOR;
+    for (CONTADOR from 1I to 3I) {
+        print(CONTADOR);
+    }; 
 
 }

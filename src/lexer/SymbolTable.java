@@ -199,41 +199,91 @@ public SymbolEntry lookupByLexeme(String lexeme) {
 
     // En SymbolTable.java
 
+
 @Override
 public String toString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append(String.format("%-35s | %-10s | %-15s | %-20s\n", "NOMBRE MANGLED", "TIPO", "USO", "VALOR"));
-    sb.append("------------------------------------+------------+-----------------+---------------------\n");
-    
+    if (allEntries.isEmpty()) return "Tabla de Símbolos vacía.";
+
+    // 1. Calcular anchos máximos iniciales (basados en las cabeceras)
+    int wName = "NOMBRE MANGLED".length();
+    int wType = "TIPO".length();
+    int wUso  = "USO".length();
+    int wVal  = "VALOR".length();
+
+    // 2. Recorrer entradas para ajustar el ancho si hay contenidos más largos
     for (SymbolEntry e : allEntries) {
+        String name = e.getMangledName() != null ? e.getMangledName() : "null";
+        String tipo = e.getTipo() != null ? e.getTipo() : "-";
+        String uso  = e.getUso() != null ? e.getUso() : "-";
+        String val  = e.getValue() != null ? e.getValue().toString() : "-";
+        
+        wName = Math.max(wName, name.length());
+        wType = Math.max(wType, tipo.length());
+        wUso  = Math.max(wUso, uso.length());
+        wVal  = Math.max(wVal, val.length());
+    }
+
+    // Agregar un pequeño margen de padding (espacio extra)
+    wName += 2; 
+    wType += 2; 
+    wUso += 2; 
+    wVal += 2;
+
+    // 3. Generar formatos y líneas separadoras dinámicas
+    String format = "| %-" + wName + "s | %-" + wType + "s | %-" + wUso + "s | %-" + wVal + "s |\n";
+    String line = "+" + "-".repeat(wName + 2) + "+" + "-".repeat(wType + 2) + "+" + "-".repeat(wUso + 2) + "+" + "-".repeat(wVal + 2) + "+\n";
+    
+    // Ancho total para las líneas de detalles (Funciones)
+    int totalWidth = (wName + 2) + (wType + 2) + (wUso + 2) + (wVal + 2) + 5; 
+
+    StringBuilder sb = new StringBuilder();
+    sb.append("\n");
+
+    
+    // Cabecera
+    sb.append(line);
+    sb.append(String.format(format, "NOMBRE MANGLED", "TIPO", "USO", "VALOR"));
+    sb.append(line);
+
+    // 4. Imprimir filas
+    for (SymbolEntry e : allEntries) {
+        String name = e.getMangledName() != null ? e.getMangledName() : "null";
         String tipo = (e.getTipo() != null) ? e.getTipo() : "-";
         String uso = (e.getUso() != null) ? e.getUso() : "-";
         String val = (e.getValue() != null) ? e.getValue().toString() : "-"; 
         
-        sb.append(String.format("%-35s | %-10s | %-15s | %-20s\n", 
-            e.getMangledName(), tipo, uso, val));
+        sb.append(String.format(format, name, tipo, uso, val));
         
-        // --- LÓGICA AGREGADA PARA FUNCIONES ---
+        // --- LÓGICA DE DETALLES PARA FUNCIONES ---
         if ("funcion".equals(uso)) {
-            // Mostrar tipos de retorno (Tema 21)
-            String retornos = String.join(", ", e.getTiposRetorno());
-            sb.append(String.format(" -> Retornos: (%s)\n", retornos.isEmpty() ? "void" : retornos));
+            // Imprimir una línea separadora interna sutil
+            String innerLine = "|" + "-".repeat(totalWidth - 2) + "|\n";
+            sb.append(innerLine);
             
-            // Mostrar firma de parámetros (Temas 23 y 26)
+            // Retornos
+            String retornos = String.join(", ", e.getTiposRetorno());
+            String textRet = " -> Retornos: (" + (retornos.isEmpty() ? "void" : retornos) + ")";
+            sb.append(String.format("| %-" + (totalWidth - 4) + "s |\n", textRet));
+            
+            // Parámetros
             List<SymbolEntry> params = e.getParametros();
             if (!params.isEmpty()) {
-                sb.append(" -> PARÁMETROS:\n");
+                sb.append(String.format("| %-" + (totalWidth - 4) + "s |\n", " -> PARÁMETROS:"));
                 for (SymbolEntry p : params) {
-                    sb.append(String.format("    - %s %s (%s, %s)\n", 
-                        p.getTipo(), 
-                        p.getLexeme(),
-                        p.getMecanismoPasaje(), // cv, cr, cvr
-                        p.getModoParametro()   // le
-                    ));
+                    String paramInfo = String.format("      * %s %s (Pasaje: %s, Modo: %s)", 
+                        p.getTipo(), p.getLexeme(), p.getMecanismoPasaje(), p.getModoParametro());
+                    sb.append(String.format("| %-" + (totalWidth - 4) + "s |\n", paramInfo));
                 }
             }
+            // Línea de cierre de la sección de función
+            sb.append(line); 
         }
     }
+    // Cierre final si la última no fue función (para que no quede doble línea)
+    if (!allEntries.isEmpty() && !"funcion".equals(allEntries.get(allEntries.size()-1).getUso())) {
+        sb.append(line);
+    }
+    
     return sb.toString();
 }
 }
