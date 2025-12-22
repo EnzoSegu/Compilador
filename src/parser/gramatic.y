@@ -74,7 +74,7 @@ import codigointermedio.*;
     private void addError(String mensaje) {
         removeLastGenericError();
         int linea=lexer.getContext().getLine();
-        String error = "Línea " + linea + ": " + mensaje;
+        String error = "Línea " + linea + "" + mensaje;
         listaErrores.add(error);
         errorEnProduccion = true;
     }
@@ -443,14 +443,14 @@ lista_variables
             lista.add(se);
             $$ = lista; 
         }
-    | lista_variables error identificador_completo
+    | lista_variables  identificador_completo
         {
             addError("Error Sintáctico: Falta separador ',' en la declaración de variables.");
             
             // Recuperación para que siga funcionando
             ArrayList<SymbolEntry> lista = (ArrayList<SymbolEntry>)$1;
             if (lista == null) lista = new ArrayList<>();
-            lista.add((SymbolEntry)$3); // $3 es el identificador
+            lista.add((SymbolEntry)$2); // $2 es el identificador
             $$ = lista;
         }
     ;
@@ -721,6 +721,12 @@ parametro_formal
         if (currentFunctionEntry != null) currentFunctionEntry.addParametro(se);
         symbolTable.add(se);
     }
+    | tipo{
+        addError("Error Sintáctico: Falta de nombre de parámetro formal en declaración de función.");
+    }
+    | sem_pasaje tipo {
+        addError("Error Sintáctico: Falta de nombre de parámetro formal en declaración de función.");
+        }
     ;
 
 sem_pasaje
