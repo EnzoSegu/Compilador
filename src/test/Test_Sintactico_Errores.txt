@@ -1,13 +1,10 @@
 
 PROGRAMERRORESSINTACTICOS {
     var A,B, RESULTADO ;
-    A , B  = 20I , 3I;
+    A   :=  20I;
        
-    if (A < B) { 
-        print("A ES MENOR"); 
-    }else
-    {
-        print("A ES MAYOR"); 
+  for (RESULTADO from 3I to 1I) {
     };
+    
     
 }

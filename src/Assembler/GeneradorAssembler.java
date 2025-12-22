@@ -72,7 +72,7 @@ public class GeneradorAssembler {
         // -------------------------------------------------------------
         writer.write("\n; Formatos de printf para rutinas de I/O\n");
         writer.write("_FMT_INT\tDB \"%d\", 0\n"); 
-        writer.write("_FMT_FLOAT\tDB \"%.10f\", 0\n"); 
+        writer.write("_FMT_FLOAT\tDB \"%.1f\", 0\n"); 
         writer.write("_FMT_STRING\tDB \"%s\", 0\n"); 
         
         // -------------------------------------------------------------

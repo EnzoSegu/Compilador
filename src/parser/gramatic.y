@@ -33,7 +33,7 @@ import codigointermedio.*;
     private PolacaInversa lambdaAssignBuffer = null; 
     private SymbolEntry currentLambdaFormal = null;
     private boolean  errorfuncion = false;
-    
+    private boolean error_comparacion = false;
     // --- LISTA DONDE SE GUARDAN LOS MENSAJES ---
     private List<String> listaErrores = new ArrayList<>();
     private List<String> listaWarnings = new ArrayList<>();
@@ -306,8 +306,7 @@ lista_sentencias
             // 1. Reinicia la bandera PRIMERO para permitir que se guarde este nuevo mensaje
             errorEnProduccion = false; 
             
-            // 2. Ahora llama a yyerror
-            yyerror("Error sintáctico en sentencia. Se esperaba un ';' o inicio de sentencia válido.");
+            
             
             removeLastGenericError(); 
         }
@@ -381,6 +380,10 @@ declaracion_variable
             }
             listaVariablesError = false; 
         }
+        | VAR error
+        { 
+            addError("Error Sintactico: Falta lista de variables a continuación de var.");
+        } 
     ;
 identificador
     : ID %prec PRIORIDAD_ID
@@ -445,7 +448,7 @@ lista_variables
         }
     | lista_variables  identificador_completo
         {
-            addError("Error Sintáctico: Falta separador ',' en la declaración de variables.");
+            addError("Error Sintáctico: Falta coma ',' en la declaración de variables.");
             
             // Recuperación para que siga funcionando
             ArrayList<SymbolEntry> lista = (ArrayList<SymbolEntry>)$1;
@@ -727,6 +730,11 @@ parametro_formal
     | sem_pasaje tipo {
         addError("Error Sintáctico: Falta de nombre de parámetro formal en declaración de función.");
         }
+    | error LE_KW
+    {
+        addError("Error Sintactico: Falta la semantica de pasaje(cv o cr) antes de directiva 'le'");
+        $$ = new String[]{"error_pasaje", "le"};
+    }
     ;
 
 sem_pasaje
@@ -875,20 +883,30 @@ sentencia_print
     };
 
 
-
 lista_sentencias_ejecutables
     : sentencia_ejecutable
     | lista_sentencias_ejecutables sentencia_ejecutable
-    {
-    }
-    | lista_sentencias_ejecutables error SEMICOLON 
-        { 
-            yyerror("Error en bloque. Recuperando en ';'."); 
-        }
     ;
 
 bloque_sentencias_ejecutables
     : LBRACE lista_sentencias_ejecutables RBRACE
+    | LBRACE RBRACE
+        {
+            addError("Error Sintáctico: El cuerpo de la iteración o bloque no puede estar vacío.");
+        }
+    | LBRACE error RBRACE
+        {
+            addError("Error Sintáctico: Error en el contenido del bloque o cuerpo vacío.");
+            yyerrflag = 0;
+        }
+    |  lista_sentencias_ejecutables RBRACE
+    {
+        addError("Error Sintáctico: falta llave de apertura en el bloque");
+    }
+    | LBRACE lista_sentencias_ejecutables error
+    {
+        addError("Error Sintactico: falta llave de cierre en el bloque");
+    }
     ;
 
 fin_else
@@ -973,9 +991,13 @@ resto_if
 sentencia_if
     : IF LPAREN condicion RPAREN 
       {
-          
-          PolacaElement cond = (PolacaElement)$3;
-          pilaSaltosBF.push(cond.getFalseList());
+          if (!error_comparacion){
+            PolacaElement cond = (PolacaElement)$3;
+            pilaSaltosBF.push(cond.getFalseList());
+          }
+          else{
+            error_comparacion = false;
+          }
       }
       bloque_sentencias_ejecutables 
       resto_if 
@@ -992,16 +1014,21 @@ sentencia_if
 if_simple
     : IF LPAREN condicion RPAREN sentencia_ejecutable 
     { 
-        PolacaElement cond = (PolacaElement)$3;
-        List<Integer> listaBF = cond.getFalseList();
+        if ( !error_comparacion){
+            PolacaElement cond = (PolacaElement)$3;
+            List<Integer> listaBF = cond.getFalseList();
 
-        
-        if (!errorEnProduccion) { 
-            System.out.println("Línea " + lexer.getContext().getLine() + 
-                ": If simple detectado (sin backpatch aún)");
+            
+            if (!errorEnProduccion) { 
+                System.out.println("Línea " + lexer.getContext().getLine() + 
+                    ": If simple detectado (sin backpatch aún)");
+            }
+            
+            $$ = listaBF;
         }
-        
-        $$ = listaBF;
+        else{
+            error_comparacion = false;
+        }
     }
 
 encabezado_for
@@ -1074,7 +1101,7 @@ encabezado_for
     }
 
 sentencia_for
-    : encabezado_for LBRACE lista_sentencias_ejecutables RBRACE SEMICOLON
+    : encabezado_for bloque_sentencias_ejecutables SEMICOLON
     {
         ForContext ctx = $1; 
        
@@ -1182,14 +1209,17 @@ condicion
         }
     | expresion expresion
         { 
+            error_comparacion= true;
             addError("Error Sintactico: Falta de comparador en comparación.");
         }
     | error operador_comparacion expresion
         { 
+            error_comparacion= true;
             addError("Error Sintactico: Falta operando izquierdo en comparación.");
         }
     | expresion operador_comparacion error
         { 
+            error_comparacion= true;
             addError("Error Sintactico: Falta operando derecho en comparación.");
         }
     ;
@@ -1436,7 +1466,7 @@ lista_expresiones
 | lista_expresiones expresion
         {
             // 1. Reportamos el error
-            addError("Error Sintáctico: Falta separador ',' entre las expresiones de la lista.");
+            addError("Error Sintáctico: Falta coma ',' entre las expresiones del lado derecho.");
             
             // 2. RECUPERACIÓN:
             @SuppressWarnings("unchecked")
@@ -1532,6 +1562,7 @@ termino
         { 
             addError("Falta de operando en término.");
         }
+    
     ;
 
 factor
